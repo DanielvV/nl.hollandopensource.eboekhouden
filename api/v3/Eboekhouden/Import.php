@@ -12,9 +12,6 @@
 function civicrm_api3_eboekhouden_Import($params) {
 
   $client = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
-  $Username = "boekhoudingsol";
-  $SecurityCode1 = "ecf5879f69151737e688e04d0f8e5cf5";
-  $SecurityCode2 = "FFDE27ED-3BF9-42DA-AECF-4C7495B9F5A6";
 
   // sessie openen en sessionid ophalen
   $params = array(
@@ -48,19 +45,17 @@ function civicrm_api3_eboekhouden_Import($params) {
   if(!is_array($Mutaties->cMutatieList))
     $Mutaties->cMutatieList = array($Mutaties->cMutatieList);
 
-  // weergeven van alle opgehaalde grootboekrekeningen...
-  echo '<table>';
-  echo '<tr><th>MutatieNr</th><th>Soort</th><th>Datum</th>';
-  echo '<th>Rekening</th><th>RelatieCode</th>';
-  echo '<th>Factuurnummer</th><th>Boekstuk</th><th>OmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijvingOmschrijving</th>';
-  echo '<th>Betalingstermijn</th><th>InExBTW</th>';
-  echo '<th>BedragInvoer</th><th>BedragExclBTW</th><th>Factuurnummer</th>';
-  echo '<th>TegenrekeningCode</th><th>KostenplaatsID</th></tr>';
   foreach ($Mutaties->cMutatieList as $Mutatie) {
-    echo '<tr>'; 
-    echo '<td>' . $Mutatie->MutatieNr . '</td>';
+    $result = civicrm_api3('BankingTransaction', 'create', [
+      'bank_reference' => $Mutatie->MutatieNr,
+      'value_date' => $Mutatie->Datum,
+      'booking_date' => $Mutatie->Datum,
+      'status_id' => 889,
+      'tx_batch_id' => 1,
+      'amount' => $Mutatie->MutatieRegels->cMutatieListRegel->BedragInvoer,
+    ]);
+    echo '<tr>';
     echo '<td>' . $Mutatie->Soort . '</td>';
-    echo '<td>' . $Mutatie->Datum . '</td>';
     echo '<td>' . $Mutatie->Rekening . '</td>';
     echo '<td>' . $Mutatie->RelatieCode . '</td>';
     echo '<td>' . $Mutatie->Factuurnummer . '</td>';
@@ -68,7 +63,6 @@ function civicrm_api3_eboekhouden_Import($params) {
     echo '<td>' . $Mutatie->Omschrijving . '</td>';
     echo '<td>' . $Mutatie->Betalingstermijn . '</td>';
     echo '<td>' . $Mutatie->InExBTW . '</td>';
-    echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->BedragInvoer . '</td>';
     echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->BedragExclBTW . '</td>';
     echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->Factuurnummer . '</td>';
     echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->TegenrekeningCode . '</td>';
