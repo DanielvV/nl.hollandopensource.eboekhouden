@@ -71,7 +71,7 @@ function civicrm_api3_eboekhouden_Import($params) {
       'data_raw' => $Mutatie->Omschrijving,
       'data_parsed' => "{\"contactnummer\":\"".ltrim($contactnummer[1],0)."\",\"payment_instrument_id\":\"5\",\"financial_type_id\":\"1\",\"purpose\":\"{$Mutatie->MutatieRegels->cMutatieListRegel->TegenrekeningCode}\",\"_party_IBAN\":\"{$_party_IBAN[0]}\",\"_party_BIC\":\"{$_party_BIC[0]}\"}",
       'tx_batch_id' => 1,
-      'suggestions' => "{\"probability\":1.0,\"reasons\":[],\"title\":\"Manuallyprocessed\",\"id\":\"manual\",\"contact_ids\":\"".ltrim($contactnummer[1],0)."\",\"contact_ids2probablility\":\"[1.0]\"}"
+      'suggestions" => "[{\"probability\":0.5,\"reasons\":[],\"title\":\"Manuallyprocessed\",\"btx_id\":\"10781\",\"plugin_id\":\"3\",\"id\":\"manual\",\"contact_ids\":\"\",\"contact_ids2probablility\":\"[]\"},{\"probability\":0.1,\"reasons\":[],\"title\":\"NotCiviCRMrelated\",\"btx_id\":\"10781\",\"plugin_id\":\"3\",\"id\":\"ignore\"}]"
     ]);
   }
 
