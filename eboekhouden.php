@@ -139,13 +139,13 @@ function eboekhouden_civicrm_preProcess($formName, &$form) {
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
  */
 function eboekhouden_civicrm_navigationMenu(&$menu) {
-  _eboekhouden_civix_insert_navigation_menu($menu, 'civicrm/banking', array(
+  _eboekhouden_civix_insert_navigation_menu($menu, 'CiviBanking', array(
     'label' => 'E-boekhouden Settings',
-    'name' => 'e-boekhouden',
+    'name' => 'E-boekhouden',
     'url' => 'civicrm/e-boekhouden',
-    'permission' => 'access CiviBanking',
+    'permission' => 'access CiviContribute,administer CiviCRM',
     'operator' => 'OR',
-    'separator' => 0,
+    'separator' => 2,
   ));
   _eboekhouden_civix_navigationMenu($menu);
 }
