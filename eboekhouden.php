@@ -137,15 +137,35 @@ function eboekhouden_civicrm_preProcess($formName, &$form) {
  * Implements hook_civicrm_navigationMenu().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
- *
-function eboekhouden_civicrm_navigationMenu(&$menu) {
-  _eboekhouden_civix_insert_navigation_menu($menu, NULL, array(
-    'label' => ts('The Page', array('domain' => 'nl.hollandopensource.eboekhouden')),
-    'name' => 'the_page',
-    'url' => 'civicrm/the-page',
-    'permission' => 'access CiviReport,access CiviContribute',
-    'operator' => 'OR',
-    'separator' => 0,
-  ));
-  _eboekhouden_civix_navigationMenu($menu);
-} // */
+ */
+function eboekhouden_civicrm_navigationMenu(&$params) {
+  
+  // Check that our item doesn't already exist
+  $menu_item_search = array('url' => 'civicrm/e-boekhouden');
+  $menu_items = array();
+  CRM_Core_BAO_Navigation::retrieve($menu_item_search, $menu_items);
+
+  if ( ! empty($menu_items) ) {
+    return;
+  }
+
+  $navId = CRM_Core_DAO::singleValueQuery("SELECT max(id) FROM civicrm_navigation");
+  if (is_integer($navId)) {
+    $navId++;
+  }
+  // Find the Report menu
+  $reportID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Navigation', 'Banking', 'id', 'name');
+  $params[$reportID]['child'][$navId] = array(
+    'attributes' => array (
+      'label' => 'E-boekhouden Settings',
+      'name' => 'E-boekhouden Settings',
+      'url' => 'civicrm/e-boekhouden',
+      'permission' => 'access CiviBanking',
+      'operator' => 'OR',
+      'separator' => 1,
+      'parentID' => $reportID,
+      'navID' => $navId,
+      'active' => 1
+    ),
+  );
+}
