@@ -140,7 +140,7 @@ function eboekhouden_civicrm_preProcess($formName, &$form) {
  */
 function eboekhouden_civicrm_navigationMenu(&$menu) {
   _eboekhouden_civix_insert_navigation_menu($menu, 'CiviBanking', array(
-    'label' => 'E-boekhouden Settings',
+    'label' => ts('E-boekhouden Settings', array('domain' => 'nl.hollandopensource.eboekhouden')),
     'name' => 'E-boekhouden',
     'url' => 'civicrm/e-boekhouden',
     'permission' => 'access CiviContribute,administer CiviCRM',
