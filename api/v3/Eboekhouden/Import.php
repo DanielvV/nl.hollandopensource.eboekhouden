@@ -12,22 +12,28 @@
 function civicrm_api3_eboekhouden_Import($params) {
 
   $client = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
+  $Username = civicrm_api3('Setting', 'getvalue', array(
+    'name' => "eboekhouden_username",
+  ));
+  $SecurityCode1 = civicrm_api3('Setting', 'getvalue', array(
+    'name' => "eboekhouden_code1",
+  ));
+  $SecurityCode2 = civicrm_api3('Setting', 'getvalue', array(
+    'name' => "eboekhouden_code2",
+  ));
 
   // sessie openen en sessionid ophalen
-  $params = array(
+  $parameters = array(
     "Username" => $Username,
     "SecurityCode1" => $SecurityCode1,
     "SecurityCode2" => $SecurityCode2
   );
 
-  $response = $client->__soapCall("OpenSession", array($params));
+  $response = $client->__soapCall("OpenSession", array($parameters));
   $SessionID = $response->OpenSessionResult->SessionID;
 
-  echo "SessionID: " . $SessionID;
-  echo "<hr>";
-
   // opvragen alle mutaties
-  $params = array(
+  $parameters = array(
     "SecurityCode2" => $SecurityCode2,
     "SessionID" => $SessionID,
     "cFilter" => array(
@@ -37,7 +43,7 @@ function civicrm_api3_eboekhouden_Import($params) {
       "DatumTm" => "2017-07-07"
     )
   );
-  $response = $client->__soapCall("GetMutaties", array($params));
+  $response = $client->__soapCall("GetMutaties", array($parameters));
 //  print_r($response);
   $Mutaties = $response->GetMutatiesResult->Mutaties;
 
@@ -46,52 +52,38 @@ function civicrm_api3_eboekhouden_Import($params) {
     $Mutaties->cMutatieList = array($Mutaties->cMutatieList);
 
   foreach ($Mutaties->cMutatieList as $Mutatie) {
+    preg_match('/[A-Z]{2}[0-9]{2}[A-Z0-9]*\b/', $Mutatie->Omschrijving, $_party_IBAN);
+    preg_match('/\b[A-Z]{6}[A-Z0-9]{2}\b/', $Mutatie->Omschrijving, $_party_BIC);
+    preg_match('/\b[0-9]{8}([0-9]{7})[0-9]{1}\b/', $Mutatie->Omschrijving, $contactnummer);
+
     $result = civicrm_api3('BankingTransaction', 'create', [
+
       'bank_reference' => $Mutatie->MutatieNr,
+
       'value_date' => $Mutatie->Datum,
+
       'booking_date' => $Mutatie->Datum,
-      'status_id' => 889,
-      'tx_batch_id' => 1,
+
       'amount' => $Mutatie->MutatieRegels->cMutatieListRegel->BedragInvoer,
+      'currency' => "EUR",
+      'type_id' => "0",
+      'status_id' => 887,
+      'data_raw' => $Mutatie->Omschrijving,
+      'data_parsed' => "{\"contactnummer\":\"".ltrim($contactnummer[1],0)."\",\"payment_instrument_id\":\"5\",\"financial_type_id\":\"1\",\"purpose\":\"{$Mutatie->MutatieRegels->cMutatieListRegel->TegenrekeningCode}\",\"_party_IBAN\":\"{$_party_IBAN[0]}\",\"_party_BIC\":\"{$_party_BIC[0]}\"}",
+      'tx_batch_id' => 1
+
     ]);
-    echo '<tr>';
-    echo '<td>' . $Mutatie->Soort . '</td>';
-    echo '<td>' . $Mutatie->Rekening . '</td>';
-    echo '<td>' . $Mutatie->RelatieCode . '</td>';
-    echo '<td>' . $Mutatie->Factuurnummer . '</td>';
-    echo '<td>' . $Mutatie->Boekstuk . '</td>';
-    echo '<td>' . $Mutatie->Omschrijving . '</td>';
-    echo '<td>' . $Mutatie->Betalingstermijn . '</td>';
-    echo '<td>' . $Mutatie->InExBTW . '</td>';
-    echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->BedragExclBTW . '</td>';
-    echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->Factuurnummer . '</td>';
-    echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->TegenrekeningCode . '</td>';
-    echo '<td>' . $Mutatie->MutatieRegels->cMutatieListRegel->KostenplaatsID . '</td>';
-    echo '</tr>';
   }
-  echo '</table>';
 
   // sessie sluiten
-  $params = array(
+  $parameters = array(
     "SessionID" => $SessionID
   );
-  $response = $client->__soapCall("CloseSession", array($params));
+  $response = $client->__soapCall("CloseSession", array($parameters));
 
 
-  if (array_key_exists('magicword', $params) && $params['magicword'] == 'sesame') {
-    $returnValues = array(
-      // OK, return several data rows
-      12 => array('id' => 12, 'name' => 'Twelve'),
-      34 => array('id' => 34, 'name' => 'Thirty four'),
-      56 => array('id' => 56, 'name' => 'Fifty six'),
-    );
-    // ALTERNATIVE: $returnValues = array(); // OK, success
-    // ALTERNATIVE: $returnValues = array("Some value"); // OK, return a single value
+  $returnValues = array();
 
-    // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
-    return civicrm_api3_create_success($returnValues, $params, 'NewEntity', 'NewAction');
-  }
-  else {
-    throw new API_Exception(/*errorMessage*/ 'Everyone knows that the magicword is "sesame"', /*errorCode*/ 1234);
-  }
+  // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
+  return civicrm_api3_create_success($returnValues, $params, 'NewEntity', 'NewAction');
 }
