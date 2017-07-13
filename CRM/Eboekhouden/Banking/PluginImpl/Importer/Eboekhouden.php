@@ -14,7 +14,7 @@
 | written permission from the original author(s).        |
 +--------------------------------------------------------*/
 // utility function
-function _csvimporter_helper_startswith($string, $prefix) {
+function _eboekhoudenimporter_helper_startswith($string, $prefix) {
   return substr($string, 0, strlen($prefix)) === $prefix;
 }
 /**
@@ -102,7 +102,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    */
   protected function getValue($key, $btx, $line=NULL, $header=array()) {
     // get value
-    if (_csvimporter_helper_startswith($key, '_constant:')) {
+    if (_eboekhoudenimporter_helper_startswith($key, '_constant:')) {
       return substr($key, 10);
     } else if ($line && is_int($key)) {
       return $line[$key];
@@ -113,7 +113,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
           return $line[$index];  
         } else {
           // this means, that the column does exist in the header, 
-          //  but not in this row => bad CSV
+          //  but not in this row => bad import
           return NULL;
         }
       } elseif (isset($btx[$key])) {
@@ -121,7 +121,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         return $btx[$key];
       } else {
         if ($this->_plugin_config->warnings) {
-          error_log("org.project60.banking: CSVImporter - Cannot find source '$key' for rule or filter.");
+          error_log("nl.hollandopensource.eboekhouden: EboekhoudenImporter - Cannot find source '$key' for rule or filter.");
         }
       }
     }
@@ -136,10 +136,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $value = $this->getValue($rule->from, $btx, $line, $header);
     // check if-clause
     if (isset($rule->if)) {
-      if (_csvimporter_helper_startswith($rule->if, 'equalto:')) {
+      if (_eboekhoudenimporter_helper_startswith($rule->if, 'equalto:')) {
         $params = explode(":", $rule->if);
         if ($value != $params[1]) return;
-      } elseif (_csvimporter_helper_startswith($rule->if, 'matches:')) {
+      } elseif (_eboekhoudenimporter_helper_startswith($rule->if, 'matches:')) {
         $params = explode(":", $rule->if);
         if (!preg_match($params[1], $value)) return;
       } else {
@@ -148,10 +148,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       }
     }
     // execute the rule
-    if (_csvimporter_helper_startswith($rule->type, 'set')) {
+    if (_eboekhoudenimporter_helper_startswith($rule->type, 'set')) {
       // SET is a simple copy command:
       $btx[$rule->to] = $value;
-    } elseif (_csvimporter_helper_startswith($rule->type, 'append')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'append')) {
       // APPEND appends the string to a give value
       if (!isset($btx[$rule->to])) $btx[$rule->to] = '';
       $params = explode(":", $rule->type);
@@ -162,7 +162,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         // default concat string is " "
         $btx[$rule->to] = $btx[$rule->to]." ".$value;
       }
-    } elseif (_csvimporter_helper_startswith($rule->type, 'trim')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'trim')) {
       // TRIM will strip the string of 
       $params = explode(":", $rule->type);
       if (isset($params[1])) {
@@ -171,18 +171,18 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         $btx[$rule->to] = trim($value);
       }
-    } elseif (_csvimporter_helper_startswith($rule->type, 'replace')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'replace')) {
       // REPLACE will replace a substring
       $params = explode(":", $rule->type);
       $btx[$rule->to] = str_replace($params[1], $params[2], $value);
-    } elseif (_csvimporter_helper_startswith($rule->type, 'format')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'format')) {
       // will use the sprintf format
       $params = explode(":", $rule->type);
       $btx[$rule->to] = sprintf($params[1], $value);
-    } elseif (_csvimporter_helper_startswith($rule->type, 'constant')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'constant')) {
       // will just set a constant string
       $btx[$rule->to] = $rule->from;
-    } elseif (_csvimporter_helper_startswith($rule->type, 'strtotime')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'strtotime')) {
       // STRTOTIME is a date parser
       $params = explode(":", $rule->type, 2);
       if (isset($params[1])) {
@@ -194,10 +194,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         $btx[$rule->to] = date('YmdHis', strtotime($value));
       }
-    } elseif (_csvimporter_helper_startswith($rule->type, 'amount')) {
+    } elseif (_ebeokhoudenimporter_helper_startswith($rule->type, 'amount')) {
       // AMOUNT will take care of currency issues, like "," instead of "."
       $btx[$rule->to] = str_replace(",", ".", $value);
-    } elseif (_csvimporter_helper_startswith($rule->type, 'regex:')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'regex:')) {
       // REGEX will extract certain values from the line
       $pattern = substr($rule->type, 6);
       $matches = array();
