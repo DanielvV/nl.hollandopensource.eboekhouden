@@ -331,7 +331,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   protected function apply_rule($rule, $line, &$btx) {
     // get value
     $value = $this->getValue($rule->from, $btx, $line);
-    $this->reportProgress(0.1, sprintf("line>key: '%s'", $value));
     // check if-clause
     if (isset($rule->if)) {
       if (_eboekhoudenimporter_helper_startswith($rule->if, 'equalto:')) {
@@ -381,6 +380,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       // will just set a constant string
       $btx[$rule->to] = $rule->from;
     } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'strtotime')) {
+    $this->reportProgress(0.1, sprintf("rule>type value: '%s'", $rule->type . ' ' . $value));
       // STRTOTIME is a date parser
       $params = explode(":", $rule->type, 2);
       if (isset($params[1])) {
