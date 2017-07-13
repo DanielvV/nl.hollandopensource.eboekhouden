@@ -38,6 +38,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->drop_columns))   $config->drop_columns = array();
+    if (!isset($config->progressfactor)) $config->progressfactor = 500;
     if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_username",
                                                              ));
@@ -208,6 +209,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
   protected function import_payment($line, $line_nr, $params) {
     $config = $this->_plugin_config;
+    $progress = $line_nr/$config->progressfactor;
     
     // generate entry data
     $raw_data = serialize($line);
