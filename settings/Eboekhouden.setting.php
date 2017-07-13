@@ -16,7 +16,7 @@ return array(
     'description' => 'Username for SOAP api E-boekhouden.nl',
     'help_text' => '',
   ),
-  'eboekhouden_code1' => array(
+  'eboekhouden_seccode1' => array(
     'group_name' => 'E-boekhouden settings',
     'group' => 'eboekhouden',
     'name' => 'eboekhouden_seccode1',
@@ -31,7 +31,7 @@ return array(
     'description' => '1st security code for SOAP api E-boekhouden.nl',
     'help_text' => '',
   ),
-  'eboekhouden_code2' => array(
+  'eboekhouden_seccode2' => array(
     'group_name' => 'E-boekhouden settings',
     'group' => 'eboekhouden',
     'name' => 'eboekhouden_seccode2',
