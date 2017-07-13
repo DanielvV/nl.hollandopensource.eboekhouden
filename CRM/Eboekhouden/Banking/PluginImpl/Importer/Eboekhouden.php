@@ -24,7 +24,7 @@ function _csvimporter_helper_startswith($string, $prefix) {
  * $Id$
  *
  */
-class CRM_Eboekhouden_PluginImpl_Importer_Eboekhouden extends CRM_Banking_PluginModel_Importer {
+class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Banking_PluginModel_Importer {
   /**
    * class constructor
    */ function __construct($config_name) {
