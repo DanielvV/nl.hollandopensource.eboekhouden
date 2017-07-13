@@ -380,7 +380,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       // will just set a constant string
       $btx[$rule->to] = $rule->from;
     } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'strtotime')) {
-    $this->reportProgress(0.1, sprintf("rule>type value: '%s'", $rule->type . ' ' . $value));
       // STRTOTIME is a date parser
       $params = explode(":", $rule->type, 2);
       if (isset($params[1])) {
@@ -392,6 +391,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         $btx[$rule->to] = date('YmdHis', strtotime($value));
       }
+    $this->reportProgress(0.1, sprintf("rule>to and its value: '%s'", $rule->to . ' ' . $btx[$rule->to]));
     } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'amount')) {
       // AMOUNT will take care of currency issues, like "," instead of "."
       $btx[$rule->to] = str_replace(",", ".", $value);
