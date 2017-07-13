@@ -119,7 +119,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
     // request the last 500 mutations
     $soapParams = array(
-      "SecurityCode2" => $SecurityCode2,
+      "SecurityCode2" => $config->seccode2,
       "SessionID" => $SessionID,
       "cFilter" => array(
         "MutatieNr" => 0,
