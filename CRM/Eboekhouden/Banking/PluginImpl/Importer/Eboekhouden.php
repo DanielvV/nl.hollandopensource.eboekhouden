@@ -307,6 +307,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * Extract the value for the given key from the resources (line, btx).
    */
   protected function getValue($key, $btx, $line=NULL, $header=array()) {
+    $this->reportProgress(0.1, sprintf("Key Btx Line: '%s'", serialize($key) . ' ' . serialize($btx) . ' ' . serialize($line)));
     // get value
     if (_eboekhoudenimporter_helper_startswith($key, '_constant:')) {
       return substr($key, 10);
@@ -329,7 +330,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * executes an import rule
    */
   protected function apply_rule($rule, $line, &$btx) {
-    $this->reportProgress(0.1, sprintf("Rule Line: '%s'", serialize($rule) . ' ' . serialize($line) . ' ' . serialize($btx)));
     // get value
     $value = $this->getValue($rule->from, $btx, $line);
     // check if-clause
