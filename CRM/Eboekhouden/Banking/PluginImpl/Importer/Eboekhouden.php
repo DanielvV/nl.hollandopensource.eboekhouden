@@ -312,7 +312,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       return substr($key, 10);
     } else {
       if (isset(get_object_vars($line)[$key])) {
-    $this->reportProgress(0.1, sprintf("line>key: '%s'", get_object_vars($line)[$key]));
         return get_object_vars($line)[$key];
       } elseif (isset($btx[$key])) {
         // this is not in the line, maybe it's already in the btx
@@ -332,6 +331,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   protected function apply_rule($rule, $line, &$btx) {
     // get value
     $value = $this->getValue($rule->from, $btx, $line);
+    $this->reportProgress(0.1, sprintf("line>key: '%s'", $value));
     // check if-clause
     if (isset($rule->if)) {
       if (_eboekhoudenimporter_helper_startswith($rule->if, 'equalto:')) {
