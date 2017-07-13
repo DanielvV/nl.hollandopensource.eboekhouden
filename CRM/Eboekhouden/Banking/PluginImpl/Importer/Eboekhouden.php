@@ -43,10 +43,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
                                                                'name' => "eboekhouden_username",
                                                              ));
     if (!isset($config->seccode1))       $config->seccode1 = civicrm_api3('Setting', 'getvalue', array(
-                                                               'name' => "eboekhouden_username",
+                                                               'name' => "eboekhouden_seccode1",
                                                              ));
     if (!isset($config->seccode2))       $config->seccode2 = civicrm_api3('Setting', 'getvalue', array(
-                                                               'name' => "eboekhouden_username",
+                                                               'name' => "eboekhouden_seccode2",
                                                              ));
   }
 
