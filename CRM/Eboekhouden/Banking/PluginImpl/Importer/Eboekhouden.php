@@ -34,7 +34,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->delimiter))      $config->delimiter = ',';
     if (!isset($config->header))         $config->header = 1;
     if (!isset($config->warnings))       $config->warnings = true;
-    if (!isset($config->skip))           $config->skip = 0;
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
@@ -107,6 +106,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $config = $this->_plugin_config;
     $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
     $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
+    $line_nr = 1; // we want to skip the header (not yet implemented)
 
     // open session and get sessionid
     $soapParams = array(
@@ -136,9 +136,51 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $Mutations->cMutatieList = array($Mutations->cMutatieList);
     
     $batch = $this->openTransactionBatch();
-    
-    foreach ($Mutations->cMutatieList as $Mutation) {
-      $this->reportProgress(0.5, sprintf("Hey: '%s'", $Mutation->MutatieNr . ' ' . $Mutation->MutatieNr . ' ' . $Mutation->Datum . ' ' . $Mutation->Datum . ' ' . $Mutation->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $Mutation->Omschrijving));
+
+    // loop through mutations
+    foreach ($Mutations->cMutatieList as $payment_line) {
+      $this->reportProgress(0.5, sprintf("Hey: '%s'", $payment_line->MutatieNr . ' ' . $payment_line->MutatieNr . ' ' . $payment_line->Datum . ' ' . $payment_line->Datum . ' ' . $payment_line->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $payment_line->Omschrijving));
+
+      // update stats
+      $line_nr += 1;
+
+      // check if we want to skip line (by filter)
+      if (!empty($config->line_filter)) {
+        $full_line = serialize($payment_line);
+        if (!preg_match($config->line_filter, $full_line)) {
+          $config->header += 1;  // bump line numbers if filtered out
+          continue;
+        }
+      }
+      // check encoding if necessary
+      //TODO: needs to be rewritten to facilitate object
+      if (isset($config->encoding)) {
+        $decoded_line = array();
+        foreach ($payment_line as $item) {
+          array_push($decoded_line, mb_convert_encoding($item, mb_internal_encoding(), $config->encoding));
+        }
+        $line = $decoded_line;
+      }
+      // exclude ignored columns from further processing
+      //TODO: needs to be rewritten to facilitate object
+      if (!empty($config->drop_columns)) {
+        foreach ($config->drop_columns as $column) {
+          $index = array_search($column, $header);
+          if ($index !== FALSE) {
+            unset($line[$index]);
+          }
+        }
+      }
+      //TODO: needs to be rewritten to facilitate object
+      if ($line_nr == $config->header) {
+        // parse header
+        if (sizeof($header)==0) {
+          $header = $line;  
+        }
+      } else {
+        // import payment
+        $this->import_payment($payment_line, $line_nr, $params);
+      }
     }
     
     // close session
@@ -162,6 +204,100 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $this->closeTransactionBatch(FALSE);
     }
     $this->reportDone();
+  }
+
+  protected function import_line($line, $line_nr, $params) {
+    $config = $this->_plugin_config;
+    
+    // generate entry data
+    $raw_data = serialize($line);
+    $btx = array(
+      'version' => 3,
+      'currency' => 'EUR',
+      'type_id' => 0,                               // TODO: lookup type ?
+      'status_id' => 0,                             // TODO: lookup status new
+      'data_raw' => $raw_data,
+      'sequence' => $line_nr-$config->header,
+    );
+    // set default values from config:
+    foreach ($config->defaults as $key => $value) {
+      $btx[$key] = $value;
+    }
+    // execute rules from config:
+    //TODO: implement rules for object or remove functionallity
+    foreach ($config->rules as $rule) {
+      try {
+        $this->apply_rule($rule, $line, $btx, $header);
+      } catch (Exception $e) {
+        $this->reportProgress($progress, sprintf(ts("Rule '%s' failed. Exception was %s"), $rule, $e->getMessage()));
+      }
+    }
+    // run filters
+    if (isset($config->filter) && is_array($config->filter)) {
+      foreach ($config->filter as $filter) {
+        if ($filter->type=='string_positive') {
+          // only accept string matches
+          $value1 = $this->getValue($filter->value1, $btx, $line, $header);
+          $value2 = $this->getValue($filter->value2, $btx, $line, $header);
+          if ($value1 != $value2) {
+            $this->reportProgress($progress, sprintf("Skipped line %d", $line_nr-$config->header));
+            return;
+          }
+        }
+      }
+    }
+    // look up the bank accounts
+    foreach ($btx as $key => $value) {
+      // check for NBAN_?? or IBAN endings
+      if (preg_match('/^_.*NBAN_..$/', $key) || preg_match('/^_.*IBAN$/', $key)) {
+        // this is a *BAN entry -> look it up
+        if (!isset($this->account_cache[$value])) {
+          $result = civicrm_api('BankingAccountReference', 'getsingle', array('version' => 3, 'reference' => $value));
+          if (!empty($result['is_error'])) {
+            $this->account_cache[$value] = NULL;
+          } else {
+            $this->account_cache[$value] = $result['ba_id'];
+          }
+        }
+        if ($this->account_cache[$value] != NULL) {
+          if (substr($key, 0, 7)=="_party_") {
+            $btx['party_ba_id'] = $this->account_cache[$value];  
+          } elseif (substr($key, 0, 1)=="_") {
+            $btx['ba_id'] = $this->account_cache[$value];  
+          }
+        }
+      }
+    }
+    // do some post processing
+    if (!isset($config->bank_reference)) {
+      // set MD5 hash as unique reference
+      $btx['bank_reference'] = md5($raw_data);
+    } else {
+      // otherwise use the template
+      $bank_reference = $config->bank_reference;
+      $tokens = array(); 
+      preg_match('/\{([^\}]+)\}/', $bank_reference, $tokens);
+      foreach ($tokens as $key => $token_name) {
+        if (!$key) continue;  // match#0 is not relevant
+        $token_value = isset($btx[$token_name])?$btx[$token_name]:'';
+        $bank_reference = str_replace("{{$token_name}}", $token_value, $bank_reference);
+      }
+      $btx['bank_reference'] = $bank_reference;
+    }    
+    // prepare $btx: put all entries, that are not for the basic object, into parsed data
+    $btx_parsed_data = array();
+    foreach ($btx as $key => $value) {
+      if (!in_array($key, $this->_primary_btx_fields)) {
+        // this entry has to be moved to the $btx_parsed_data records
+        $btx_parsed_data[$key] = $value;
+        unset($btx[$key]);
+      }
+    }
+    $btx['data_parsed'] = json_encode($btx_parsed_data);
+    // and finally write it into the DB
+    $duplicate = $this->checkAndStoreBTX($btx, $progress, $params);
+    // TODO: process duplicates or failures?
+    $this->reportProgress($progress, sprintf("Imported line %d", $line_nr-$config->header));
   }
 
   /**
