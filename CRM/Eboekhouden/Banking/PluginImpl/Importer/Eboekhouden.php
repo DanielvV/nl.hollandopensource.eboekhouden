@@ -206,7 +206,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $this->reportDone();
   }
 
-  protected function import_line($line, $line_nr, $params) {
+  protected function import_payment($line, $line_nr, $params) {
     $config = $this->_plugin_config;
     
     // generate entry data
