@@ -129,13 +129,17 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       )
     );
     $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
-    
-    
-    
+    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
+
+    // make array if there is a result
+    if(!is_array($Mutations->cMutatieList))
+      $Mutations->cMutatieList = array($Mutations->cMutatieList);
     
     $batch = $this->openTransactionBatch();
     
-    
+    foreach ($Mutations->cMutatieList as $Mutation) {
+      $this->reportProgress(0.5, sprintf("Hey: '%s'", $Mutation->MutatieNr . ' ' . $Mutatie->MutatieNr . ' ' . $Mutation->Datum . ' ' . $Mutation->Datum . ' ' . $Mutation->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $Mutation->Omschrijving));
+    }
     
     // close session
     $soapParams = array(
