@@ -307,7 +307,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * Extract the value for the given key from the resources (line, btx).
    */
   protected function getValue($key, $btx, $line=NULL, $header=array()) {
-    $this->reportProgress(0.1, sprintf("$line->$key: '%s'", get_object_vars($line)[$key]));
+    $this->reportProgress(0.1, sprintf("line>key: '%s'", get_object_vars($line)[$key]));
     // get value
     if (_eboekhoudenimporter_helper_startswith($key, '_constant:')) {
       return substr($key, 10);
