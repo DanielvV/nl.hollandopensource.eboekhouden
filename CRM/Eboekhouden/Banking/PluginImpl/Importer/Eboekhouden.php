@@ -37,11 +37,11 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array(
-      {
+      '{
          "from":"Datum",
          "to":"booking_date",
          "type":"strtotime:Y-m-d\Th:m:s"
-      }
+      }'
     );
     if (!isset($config->drop_columns))   $config->drop_columns = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
