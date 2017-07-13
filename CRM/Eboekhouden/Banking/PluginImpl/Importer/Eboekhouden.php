@@ -106,7 +106,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // begin
     $config = $this->_plugin_config;
     $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
-    $client = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
+    $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
 
     // open session and get sessionid
     $soapParams = array(
@@ -114,14 +114,50 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       "SecurityCode1" => $config->seccode1,
       "SecurityCode2" => $config->seccode2
     );
-    $response = $client->__soapCall("OpenSession", array($soapParams));
-    $SessionID = $response->OpenSessionResult->SessionID;
+    $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
+    $SessionID = $soapResponse->OpenSessionResult->SessionID;
 
+    // request the last 500 mutations
+    $soapParams = array(
+      "SecurityCode2" => $SecurityCode2,
+      "SessionID" => $SessionID,
+      "cFilter" => array(
+        "MutatieNr" => 0,
+        "Factuurnummer" => "",
+        "DatumVan" => "2017-01-01",
+        "DatumTm" => "2100-01-01"
+      )
+    );
+    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
+    
+    
+    
+    
+    $batch = $this->openTransactionBatch();
+    
+    
+    
+    // close session
     $soapParams = array(
       "SessionID" => $SessionID
     );
-    $response = $client->__soapCall("CloseSession", array($soapParams));
-    $this->reportDone(ts("Importing streams not supported by this plugin."));
+    $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
+
+    //TODO: customize batch params
+
+    if ($this->getCurrentTransactionBatch()->tx_count) {
+      // we have transactions in the batch -> save
+      if ($config->title) {
+        // the config defines a title, replace tokens
+        $this->getCurrentTransactionBatch()->reference = $config->title;
+      } else {
+        $this->getCurrentTransactionBatch()->reference = "CSV-File {md5}";
+      }
+      $this->closeTransactionBatch(TRUE);
+    } else {
+      $this->closeTransactionBatch(FALSE);
+    }
+    $this->reportDone();
   }
 
   /**
