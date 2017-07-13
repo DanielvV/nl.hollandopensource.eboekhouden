@@ -106,6 +106,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // begin
     $config = $this->_plugin_config;
     $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
+    $this->reportProgress(0.0, sprintf("Config: '%s'", serialize($config)));
     $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
