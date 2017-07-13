@@ -39,6 +39,15 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->drop_columns))   $config->drop_columns = array();
+    if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
+                                                               'name' => "eboekhouden_username",
+                                                             ));
+    if (!isset($config->seccode1))       $config->seccode1 = civicrm_api3('Setting', 'getvalue', array(
+                                                               'name' => "eboekhouden_username",
+                                                             ));
+    if (!isset($config->seccode2))       $config->seccode2 = civicrm_api3('Setting', 'getvalue', array(
+                                                               'name' => "eboekhouden_username",
+                                                             ));
   }
 
   /**
@@ -84,7 +93,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    */
   function probe_stream( $params )
   {
-    return false;
+    return true;
   }
 
   /** 
