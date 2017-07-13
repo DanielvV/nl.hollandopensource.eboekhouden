@@ -124,8 +124,8 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       "cFilter" => array(
         "MutatieNr" => 0,
         "Factuurnummer" => "",
-        "DatumVan" => "2017-01-01",
-        "DatumTm" => "2100-01-01"
+        "DatumVan" => date("Y-m-d H:i:s", strtotime("-1 year")),
+        "DatumTm" => date("Y-m-d H:i:s")
       )
     );
     $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
