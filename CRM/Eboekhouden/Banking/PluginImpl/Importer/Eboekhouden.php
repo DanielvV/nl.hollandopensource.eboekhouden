@@ -36,7 +36,13 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->warnings))       $config->warnings = true;
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
-    if (!isset($config->rules))          $config->rules = array();
+    if (!isset($config->rules))          $config->rules = array(
+      {
+         "from":"Datum",
+         "to":"booking_date",
+         "type":"strtotime:Y-m-d\Th:m:s"
+      }
+    );
     if (!isset($config->drop_columns))   $config->drop_columns = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
     if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
@@ -309,18 +315,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // get value
     if (_eboekhoudenimporter_helper_startswith($key, '_constant:')) {
       return substr($key, 10);
-    } else if ($line && is_int($key)) {
-      return $line[$key];
     } else {
-      $index = array_search($key, $header);
-      if ($index!==FALSE) {
-        if (isset($line[$index])) {
-          return $line[$index];  
-        } else {
-          // this means, that the column does exist in the header, 
-          //  but not in this row => bad import
-          return NULL;
-        }
+      if (isset($line->$key)) {
+        return $line->$key;
       } elseif (isset($btx[$key])) {
         // this is not in the line, maybe it's already in the btx
         return $btx[$key];
