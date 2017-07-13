@@ -105,14 +105,14 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     // begin
     $config = $this->_plugin_config;
-    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->'username'));
+    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
     $client = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
 
     // open session and get sessionid
     $soapParams = array(
-      "Username" => $config['username'],
-      "SecurityCode1" => $config['seccode1'],
-      "SecurityCode2" => $config['seccode1']
+      "Username" => $config->username,
+      "SecurityCode1" => $config->seccode1,
+      "SecurityCode2" => $config->seccode2
     );
     $response = $client->__soapCall("OpenSession", array($soapParams));
     $SessionID = $response->OpenSessionResult->SessionID;
