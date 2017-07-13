@@ -140,8 +140,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
     // loop through mutations
     foreach ($Mutations->cMutatieList as $payment_line) {
-      $this->reportProgress(0.5, sprintf("Hey: '%s'", $payment_line->MutatieNr . ' ' . $payment_line->MutatieNr . ' ' . $payment_line->Datum . ' ' . $payment_line->Datum . ' ' . $payment_line->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $payment_line->Omschrijving));
-
       // update stats
       $line_nr += 1;
 
@@ -300,6 +298,8 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $duplicate = $this->checkAndStoreBTX($btx, $progress, $params);
     // TODO: process duplicates or failures?
     $this->reportProgress($progress, sprintf("Imported line %d", $line_nr-$config->header));
+    $this->reportProgress($progress, sprintf("Hey: '%s'", $line->MutatieNr . ' ' . $line->MutatieNr . ' ' . $line->Datum . ' ' . $line->Datum . ' ' . $line->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $line->Omschrijving));
+    $this->reportProgress($progress, sprintf("Hey: '%s'", serialize($btx)));
   }
 
   /**
