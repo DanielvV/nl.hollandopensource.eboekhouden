@@ -36,13 +36,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->warnings))       $config->warnings = true;
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
-    if (!isset($config->rules))          $config->rules = array(
-      '{
-         "from":"Datum",
-         "to":"booking_date",
-         "type":"strtotime:Y-m-d\Th:m:s"
-      }'
-    );
+    if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->drop_columns))   $config->drop_columns = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
     if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
@@ -396,7 +390,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         $btx[$rule->to] = date('YmdHis', strtotime($value));
       }
-    } elseif (_ebeokhoudenimporter_helper_startswith($rule->type, 'amount')) {
+    } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'amount')) {
       // AMOUNT will take care of currency issues, like "," instead of "."
       $btx[$rule->to] = str_replace(",", ".", $value);
     } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'regex:')) {
