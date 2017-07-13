@@ -40,10 +40,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->drop_columns))   $config->drop_columns = array();
   }
+
   /**
    * will be used to avoid multiple account lookups
    */
   protected $account_cache = array();
+
   /** 
    * the plugin's user readable name
    * 
@@ -53,6 +55,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     return 'E-boekhouden Importer';
   }
+
   /** 
    * Report if the plugin is capable of importing files
    * 
@@ -62,6 +65,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     return false;
   }
+
   /** 
    * Report if the plugin is capable of importing streams, i.e. data from a non-file source, e.g. the web
    * 
@@ -73,12 +77,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   }
 
   /** 
-   * Test if the given file can be imported
+   * Test if the configured source is available and ready
    * 
    * @var 
-   * @return TODO: data format? 
+   * @return TODO: data format?
    */
-  function probe_file( $file_path, $params )
+  function probe_stream( $params )
   {
     return false;
   }
@@ -88,10 +92,11 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * 
    * @return TODO: data format? 
    */
-  function import_file( $file_path, $params )
+  function import_stream( $params )
   {
-    $this->reportDone(ts("Importing files not supported by this plugin."));
+    $this->reportDone(ts("Importing streams not supported by this plugin."));
   }
+
   /**
    * Extract the value for the given key from the resources (line, btx).
    */
@@ -122,6 +127,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
     return '';
   }
+
   /**
    * executes an import rule
    */
@@ -209,23 +215,25 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       print_r("RULE TYPE NOT YET IMPLEMENTED");
     }    
   }
+
   /** 
-   * Test if the configured source is available and ready
+   * Test if the given file can be imported
    * 
    * @var 
-   * @return TODO: data format?
+   * @return TODO: data format? 
    */
-  function probe_stream( $params )
+  function probe_file( $file_path, $params )
   {
     return false;
   }
+
   /** 
    * Import the given file
    * 
    * @return TODO: data format? 
    */
-  function import_stream( $params )
+  function import_file( $file_path, $params )
   {
-    $this->reportDone(ts("Importing streams not supported by this plugin."));
+    $this->reportDone(ts("Importing files not supported by this plugin."));
   }
 }
