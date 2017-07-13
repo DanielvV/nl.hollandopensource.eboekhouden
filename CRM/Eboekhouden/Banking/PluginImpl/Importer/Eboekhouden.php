@@ -138,7 +138,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $batch = $this->openTransactionBatch();
     
     foreach ($Mutations->cMutatieList as $Mutation) {
-      $this->reportProgress(0.5, sprintf("Hey: '%s'", $Mutation->MutatieNr . ' ' . $Mutatie->MutatieNr . ' ' . $Mutation->Datum . ' ' . $Mutation->Datum . ' ' . $Mutation->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $Mutation->Omschrijving));
+      $this->reportProgress(0.5, sprintf("Hey: '%s'", $Mutation->MutatieNr . ' ' . $Mutation->MutatieNr . ' ' . $Mutation->Datum . ' ' . $Mutation->Datum . ' ' . $Mutation->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $Mutation->Omschrijving));
     }
     
     // close session
