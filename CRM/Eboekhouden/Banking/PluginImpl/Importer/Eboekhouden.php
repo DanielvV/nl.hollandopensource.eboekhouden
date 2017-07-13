@@ -333,9 +333,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   /**
    * executes an import rule
    */
-  protected function apply_rule($rule, $line, &$btx, $header) {
+  protected function apply_rule($rule, $line, &$btx) {
     // get value
-    $value = $this->getValue($rule->from, $btx, $line, $header);
+    $value = $this->getValue($rule->from, $btx, $line);
     // check if-clause
     if (isset($rule->if)) {
       if (_eboekhoudenimporter_helper_startswith($rule->if, 'equalto:')) {
