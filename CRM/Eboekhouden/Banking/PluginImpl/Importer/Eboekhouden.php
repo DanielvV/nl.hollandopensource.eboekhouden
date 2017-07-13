@@ -71,6 +71,30 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     return true;
   }
+
+  /** 
+   * Test if the given file can be imported
+   * 
+   * @var 
+   * @return TODO: data format? 
+   */
+  function probe_file( $file_path, $params )
+  {
+    $config = $this->_plugin_config;
+    if (empty($config->sentinel)) return true; // no sentinel specified... there's nothing we can do.
+    // the sentinel is used to verfiy, that the file is of the expected format
+    $file = fopen($file_path, 'r');
+    $probe_data = fread($file, 1024);
+    fclose($file);
+    // check encoding if necessary
+    if (isset($config->encoding)) {
+      $probe_data = mb_convert_encoding($probe_data, mb_internal_encoding(), $config->encoding);
+    }
+    // end verify this matches the sentinel
+    $sentinel = mb_convert_encoding($config->sentinel, mb_internal_encoding());
+    return preg_match($sentinel, $probe_data);
+  }
+
   /** 
    * Import the given file
    * 
