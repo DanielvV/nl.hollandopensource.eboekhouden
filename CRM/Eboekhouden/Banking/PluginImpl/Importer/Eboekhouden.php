@@ -233,7 +233,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     //TODO: implement rules for object or remove functionallity
     foreach ($config->rules as $rule) {
       try {
-        $this->apply_rule($rule, $line, $btx, $header);
+        $this->apply_rule($rule, $line, $btx);
       } catch (Exception $e) {
         $this->reportProgress($progress, sprintf(ts("Rule '%s' failed. Exception was %s"), $rule, $e->getMessage()));
       }
