@@ -329,6 +329,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * executes an import rule
    */
   protected function apply_rule($rule, $line, &$btx) {
+    $this->reportProgress(0.1, sprintf("Rule Line: '%s'", serialize($rule) . ' ' . serialize($line) . ' ' . serialize($btx)));
     // get value
     $value = $this->getValue($rule->from, $btx, $line);
     // check if-clause
