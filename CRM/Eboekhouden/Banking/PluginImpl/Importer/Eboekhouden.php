@@ -110,7 +110,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
-    if ($debug_object=='') {
+    if ($config->debug_object=='') {
       // open session and get sessionid
       $soapParams = array(
         "Username" => $config->username,
@@ -191,7 +191,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       }
     }
 
-    if ($debug_object=='') {
+    if ($config->debug_object=='') {
       // close session
       $soapParams = array(
         "SessionID" => $SessionID
