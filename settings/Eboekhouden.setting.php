@@ -1,8 +1,23 @@
 <?php
 
 return array(
+  'eboekhouden_soap_url' => array(
+    'group_name' => 'SOAP api settings',
+    'group' => 'eboekhouden',
+    'name' => 'eboekhouden_soap_url',
+    'type' => 'String',
+    'quick_form_type' => 'Element',
+    'html_type' => 'Text',
+    'default' => '',
+    'add' => '4.3',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => 'SOAP url',
+    'description' => 'URL for SOAP api connection',
+    'help_text' => '',
+  ),
   'eboekhouden_username' => array(
-    'group_name' => 'E-boekhouden settings',
+    'group_name' => 'SOAP api settings',
     'group' => 'eboekhouden',
     'name' => 'eboekhouden_username',
     'type' => 'String',
@@ -13,11 +28,11 @@ return array(
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => 'Username',
-    'description' => 'Username for SOAP api E-boekhouden.nl',
+    'description' => 'Username for SOAP api connection',
     'help_text' => '',
   ),
   'eboekhouden_seccode1' => array(
-    'group_name' => 'E-boekhouden settings',
+    'group_name' => 'SOAP api settings',
     'group' => 'eboekhouden',
     'name' => 'eboekhouden_seccode1',
     'type' => 'String',
@@ -28,11 +43,11 @@ return array(
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => 'Security code 1',
-    'description' => '1st security code for SOAP api E-boekhouden.nl',
+    'description' => '1st security code for SOAP api connection',
     'help_text' => '',
   ),
   'eboekhouden_seccode2' => array(
-    'group_name' => 'E-boekhouden settings',
+    'group_name' => 'SOAP api settings',
     'group' => 'eboekhouden',
     'name' => 'eboekhouden_seccode2',
     'type' => 'String',
@@ -43,7 +58,7 @@ return array(
     'is_domain' => 1,
     'is_contact' => 0,
     'title' => 'Security code 2',
-    'description' => '2nd security code for SOAP api E-boekhouden.nl',
+    'description' => '2nd security code for SOAP api connection',
     'help_text' => '',
   ),
 );
