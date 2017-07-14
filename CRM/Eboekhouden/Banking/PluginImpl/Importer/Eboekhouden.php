@@ -37,8 +37,8 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
-    if (!isset($config->drop_columns))   $config->drop_columns = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
+    if (!isset($config->debug_object))   $config->debug_object = '';
     if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_username",
                                                              ));
@@ -110,6 +110,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
+  if ($debug_object=='') {
     // open session and get sessionid
     $soapParams = array(
       "Username" => $config->username,
@@ -135,13 +136,17 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
     // make array if there is a result
     if(!is_array($Mutations->cMutatieList))
-      $Mutations->cMutatieList = array($Mutations->cMutatieList);
-    
+    {
+      $payment_lines = array($Mutations->cMutatieList);
+    } else {
+      $payment_lines = $Mutations->cMutatieList;
+    }
+  }
     $batch = $this->openTransactionBatch();
-    $this->reportProgress(1.0, sprintf("Mutations>cMutatieList: '%s'", serialize($Mutations->cMutatieList)));
+    $this->reportProgress(1.0, sprintf("payment_lines: '%s'", base64_encode(gzcompress(serialize($payment_lines)))));
 
     // loop through mutations
-    foreach ($Mutations->cMutatieList as $payment_line) {
+    foreach ($payment_lines as $payment_line) {
       // update stats
       $line_nr += 1;
 
