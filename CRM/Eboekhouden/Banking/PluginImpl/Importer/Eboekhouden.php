@@ -110,9 +110,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
     if ($config->debug_object=='') {
-      $payment_lines = $this->get_soap;
+      $payment_lines = get_object_vars($this->get_soap);
     } else {
-      $payment_lines = unserialize(gzuncompress(base64_decode($config->debug_object)));
+      $payment_lines = get_object_vars(unserialize(gzuncompress(base64_decode($config->debug_object))));
     }
     
     $batch = $this->openTransactionBatch();
@@ -228,7 +228,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $progress = $line_nr/$config->progressfactor;
     
     // generate entry data
-    $raw_data = json_encode(get_object_vars($line));
+    $raw_data = serialize($line);
     $btx = array(
       'version' => 3,
       'currency' => 'EUR',
@@ -328,8 +328,8 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (_eboekhoudenimporter_helper_startswith($key, '_constant:')) {
       return substr($key, 10);
     } else {
-      if (isset(get_object_vars($line)[$key])) {
-        return get_object_vars($line)[$key];
+      if (isset($line[$key])) {
+        return $line[$key];
       } elseif (isset($btx[$key])) {
         // this is not in the line, maybe it's already in the btx
         return $btx[$key];
