@@ -211,7 +211,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $progress = $line_nr/$config->progressfactor;
     
     // generate entry data
-    $raw_data = print_r($line);
+    $raw_data = json_encode($line);
     $btx = array(
       'version' => 3,
       'currency' => 'EUR',
