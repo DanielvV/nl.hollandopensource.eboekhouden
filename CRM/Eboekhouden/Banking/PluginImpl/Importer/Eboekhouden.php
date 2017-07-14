@@ -409,7 +409,11 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $matches = array();
       if (preg_match($pattern, $value, $matches)) {
         // we found it!
-        $btx[$rule->to] = $matches[1];
+        if (isset($matches[$rule->to]))
+          $btx[$rule->to] = $matches[$rule->to];
+        } else {
+          $btx[$rule->to] = $matches[1];
+        }
       } else {
         // check, if we should warn: (not set = 'warn' for backward compatibility)
         if (!isset($rule->warn) || $rule->warn) {
