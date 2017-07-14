@@ -110,9 +110,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
     if ($config->debug_object=='') {
-      $payment_lines = get_object_vars($this->get_soap);
+      $payment_lines = $this->get_soap;
     } else {
-      $payment_lines = get_object_vars(unserialize(gzuncompress(base64_decode($config->debug_object))));
+      $payment_lines = unserialize(gzuncompress(base64_decode($config->debug_object)));
     }
     
     $batch = $this->openTransactionBatch();
@@ -237,6 +237,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       'data_raw' => $raw_data,
       'sequence' => $line_nr-$config->header,
     );
+    
+    $line = get_object_vars($line);
+    
     // set default values from config:
     foreach ($config->defaults as $key => $value) {
       $btx[$key] = $value;
