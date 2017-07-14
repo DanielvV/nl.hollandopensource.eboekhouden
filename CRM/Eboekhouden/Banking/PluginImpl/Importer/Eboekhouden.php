@@ -391,7 +391,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         $btx[$rule->to] = date('YmdHis', strtotime($value));
       }
-    $this->reportProgress(0.1, sprintf("rule>to and its value: '%s'", $rule->to . ' ' . $btx[$rule->to]));
+    $this->reportProgress(0.1, sprintf("rule>to and its value: '%s'", $rule->to . ' ' . $btx[$rule->to] . ' ' . $value));
     } elseif (_eboekhoudenimporter_helper_startswith($rule->type, 'amount')) {
       // AMOUNT will take care of currency issues, like "," instead of "."
       $btx[$rule->to] = str_replace(",", ".", $value);
