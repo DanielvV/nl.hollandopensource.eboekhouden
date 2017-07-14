@@ -342,7 +342,15 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       }
     }
     // execute the rule
-    if ($this->startsWith($rule->type, 'set')) {
+    if ($this->startsWith($rule->type, 'object')) {
+      foreach ($rule["to"] as $childrule) {
+        try {
+          $this->apply_rule($childrule, get_object_vars($value), $btx);
+        } catch (Exception $e) {
+          $this->reportProgress($progress, sprintf(ts("Rule '%s' failed. Exception was %s"), $childrule, $e->getMessage()));
+        }
+      }
+    } elseif ($this->startsWith($rule->type, 'set')) {
       // SET is a simple copy command:
       $btx[$rule->to] = $value;
     } elseif ($this->startsWith($rule->type, 'append')) {
