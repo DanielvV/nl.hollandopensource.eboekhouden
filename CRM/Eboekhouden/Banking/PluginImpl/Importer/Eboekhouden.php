@@ -303,8 +303,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $duplicate = $this->checkAndStoreBTX($btx, $progress, $params);
     // TODO: process duplicates or failures?
     $this->reportProgress($progress, sprintf("Imported line %d", $line_nr-$config->header));
-    // $this->reportProgress($progress, sprintf("Hey: '%s'", $line->MutatieNr . ' ' . $line->MutatieNr . ' ' . $line->Datum . ' ' . $line->Datum . ' ' . $line->MutatieRegels->cMutatieListRegel->BedragInvoer . ' ' . $line->Omschrijving));
-    $this->reportProgress($progress, sprintf("Hey: '%s'", serialize($btx)));
   }
   /**
    * Extract the value for the given key from the resources (line, btx).
