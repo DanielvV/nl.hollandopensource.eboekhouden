@@ -328,6 +328,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   protected function apply_rule($rule, $line, &$btx) {
     // get value
     $value = $this->getValue($rule->from, $btx, $line);
+    $this->reportProgress($progress, sprintf("rule line value btx: '%s'", $rule . ' ' . serialize($line) . ' ' . serialize($value) . ' ' . serialize($btx)));
     // check if-clause
     if (isset($rule->if)) {
       if ($this->startsWith($rule->if, 'equalto:')) {
