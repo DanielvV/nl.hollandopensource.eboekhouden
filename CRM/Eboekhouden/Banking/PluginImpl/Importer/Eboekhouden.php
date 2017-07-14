@@ -110,36 +110,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
     if ($config->debug_object=='') {
-      // open session and get sessionid
-      $soapParams = array(
-        "Username" => $config->username,
-        "SecurityCode1" => $config->seccode1,
-        "SecurityCode2" => $config->seccode2
-      );
-      $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
-      $SessionID = $soapResponse->OpenSessionResult->SessionID;
-
-      // request the last 500 mutations
-      $soapParams = array(
-        "SecurityCode2" => $config->seccode2,
-        "SessionID" => $SessionID,
-        "cFilter" => array(
-          "MutatieNr" => 0,
-          "Factuurnummer" => "",
-          "DatumVan" => date("Y-m-d", strtotime("-1 year")),
-          "DatumTm" => date("Y-m-d")
-        )
-      );
-      $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
-      $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
-
-      // make array if there is a result
-      if(!is_array($Mutations->cMutatieList))
-      {
-        $payment_lines = array($Mutations->cMutatieList);
-      } else {
-        $payment_lines = $Mutations->cMutatieList;
-      }
+      $payment_lines = $this->get_soap;
     } else {
       $payment_lines = unserialize(gzuncompress(base64_decode($config->debug_object)));
     }
@@ -191,11 +162,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
 
     if ($config->debug_object=='') {
-      // close session
-      $soapParams = array(
-        "SessionID" => $SessionID
-      );
-      $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
+      $this->close_soap;
     }
 
     //TODO: customize batch params
@@ -213,6 +180,47 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $this->closeTransactionBatch(FALSE);
     }
     $this->reportDone();
+  }
+
+  protected function get_soap() {
+    // open session and get sessionid
+    $soapParams = array(
+      "Username" => $config->username,
+      "SecurityCode1" => $config->seccode1,
+      "SecurityCode2" => $config->seccode2
+    );
+    $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
+    $SessionID = $soapResponse->OpenSessionResult->SessionID;
+
+    // request the last 500 mutations
+    $soapParams = array(
+      "SecurityCode2" => $config->seccode2,
+      "SessionID" => $SessionID,
+      "cFilter" => array(
+        "MutatieNr" => 0,
+        "Factuurnummer" => "",
+        "DatumVan" => date("Y-m-d", strtotime("-1 year")),
+        "DatumTm" => date("Y-m-d")
+      )
+    );
+    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
+    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
+
+    // make array if there is a result
+    if(!is_array($Mutations->cMutatieList))
+    {
+      return array($Mutations->cMutatieList);
+    } else {
+      return $Mutations->cMutatieList;
+    }
+  }
+
+  protected function close_soap() {
+      // close session
+      $soapParams = array(
+        "SessionID" => $SessionID
+      );
+      $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
   }
 
   protected function import_payment($line, $line_nr, $params) {
