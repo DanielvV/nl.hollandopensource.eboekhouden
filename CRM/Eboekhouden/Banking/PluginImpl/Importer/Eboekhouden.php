@@ -28,6 +28,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // read config, set defaults
     $config = $this->_plugin_config;
     if (!isset($config->delimiter))      $config->delimiter = ',';
+    if (!isset($config->title))          $config->title = '';
     if (!isset($config->header))         $config->header = 1;
     if (!isset($config->warnings))       $config->warnings = true;
     if (!isset($config->line_filter))    $config->line_filter = NULL;
