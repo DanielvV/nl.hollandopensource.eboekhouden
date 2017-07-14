@@ -138,6 +138,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $Mutations->cMutatieList = array($Mutations->cMutatieList);
     
     $batch = $this->openTransactionBatch();
+    $this->reportProgress(1.0, sprintf("Mutations>cMutatieList: '%s'", serialize($Mutations->cMutatieList)));
 
     // loop through mutations
     foreach ($Mutations->cMutatieList as $payment_line) {
