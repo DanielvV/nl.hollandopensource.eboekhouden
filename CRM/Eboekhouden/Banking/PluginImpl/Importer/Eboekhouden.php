@@ -98,9 +98,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     // begin
     $config = $this->_plugin_config;
-    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
-    $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
-    $line_nr = 1; // we want to skip the header (not yet implemented)
+    $line_nr = 1; // we want to skip the header (no header / not implemented)
     if ($config->debug_object=='') {
       $payment_lines = $this->get_soap;
     } else {
@@ -169,6 +167,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $this->reportDone();
   }
   protected function get_soap() {
+    $config = $this->_plugin_config;
+    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
+    $soapClient = new SoapClient($config->soap_url);
+
     // open session and get sessionid
     $soapParams = array(
       "Username" => $config->username,
