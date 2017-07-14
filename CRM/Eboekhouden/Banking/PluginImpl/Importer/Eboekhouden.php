@@ -343,7 +343,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
     // execute the rule
     if ($this->startsWith($rule->type, 'object')) {
-      foreach ($rule["to"] as $childrule) {
+      foreach ($rule->to as $childrule) {
         try {
           $this->apply_rule($childrule, get_object_vars($value), $btx);
         } catch (Exception $e) {
