@@ -110,40 +110,42 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $soapClient = new SoapClient("https://soap.e-boekhouden.nl/soap.asmx?WSDL");
     $line_nr = 1; // we want to skip the header (not yet implemented)
 
-  if ($debug_object=='') {
-    // open session and get sessionid
-    $soapParams = array(
-      "Username" => $config->username,
-      "SecurityCode1" => $config->seccode1,
-      "SecurityCode2" => $config->seccode2
-    );
-    $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
-    $SessionID = $soapResponse->OpenSessionResult->SessionID;
+    if ($debug_object=='') {
+      // open session and get sessionid
+      $soapParams = array(
+        "Username" => $config->username,
+        "SecurityCode1" => $config->seccode1,
+        "SecurityCode2" => $config->seccode2
+      );
+      $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
+      $SessionID = $soapResponse->OpenSessionResult->SessionID;
 
-    // request the last 500 mutations
-    $soapParams = array(
-      "SecurityCode2" => $config->seccode2,
-      "SessionID" => $SessionID,
-      "cFilter" => array(
-        "MutatieNr" => 0,
-        "Factuurnummer" => "",
-        "DatumVan" => date("Y-m-d", strtotime("-1 year")),
-        "DatumTm" => date("Y-m-d")
-      )
-    );
-    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
-    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
+      // request the last 500 mutations
+      $soapParams = array(
+        "SecurityCode2" => $config->seccode2,
+        "SessionID" => $SessionID,
+        "cFilter" => array(
+          "MutatieNr" => 0,
+          "Factuurnummer" => "",
+          "DatumVan" => date("Y-m-d", strtotime("-1 year")),
+          "DatumTm" => date("Y-m-d")
+        )
+      );
+      $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
+      $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
 
-    // make array if there is a result
-    if(!is_array($Mutations->cMutatieList))
-    {
-      $payment_lines = array($Mutations->cMutatieList);
+      // make array if there is a result
+      if(!is_array($Mutations->cMutatieList))
+      {
+        $payment_lines = array($Mutations->cMutatieList);
+      } else {
+        $payment_lines = $Mutations->cMutatieList;
+      }
     } else {
-      $payment_lines = $Mutations->cMutatieList;
+      $payment_lines = unserialize(gzuncompress(base64_decode($debug_object)));
     }
-  }
+    
     $batch = $this->openTransactionBatch();
-    $this->reportProgress(1.0, sprintf("payment_lines: '%s'", base64_encode(gzcompress(serialize($payment_lines)))));
 
     // loop through mutations
     foreach ($payment_lines as $payment_line) {
@@ -188,12 +190,14 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         $this->import_payment($payment_line, $line_nr, $params);
       }
     }
-    
-    // close session
-    $soapParams = array(
-      "SessionID" => $SessionID
-    );
-    $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
+
+    if ($debug_object=='') {
+      // close session
+      $soapParams = array(
+        "SessionID" => $SessionID
+      );
+      $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
+    }
 
     //TODO: customize batch params
 
