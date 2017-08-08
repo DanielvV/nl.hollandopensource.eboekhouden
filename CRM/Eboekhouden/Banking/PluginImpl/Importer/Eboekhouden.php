@@ -36,7 +36,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
     if (!isset($config->debug_object))   $config->debug_object = '';
-    if (!isset($config->soap_url))       $config->username = civicrm_api3('Setting', 'getvalue', array(
+    if (!isset($config->soap_url))       $config->soap_url = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_soap_url",
                                                              ));
     if (!isset($config->username))       $config->username = civicrm_api3('Setting', 'getvalue', array(
