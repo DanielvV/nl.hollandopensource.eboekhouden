@@ -101,7 +101,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $config = $this->_plugin_config;
     $line_nr = 1; // we want to skip the header (no header / not implemented)
     if ($config->debug_object=='') {
-      $payment_lines = $this->get_soap;
+      $payment_lines = $this->get_soap();
     } else {
       $payment_lines = unserialize(gzuncompress(base64_decode($config->debug_object)));
     }
