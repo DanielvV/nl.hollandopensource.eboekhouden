@@ -109,13 +109,13 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $soapSessionId = $this->open_soap_session($soapClient);
 
       // loop through mutations
-      $line_nr = process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr);
+      $line_nr = $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr);
 
       $cursor = $config->cursor;
       $newcursor = array_slice($cursor, -1);
       while ($next_in_line = array_shift($cursor) + 1) {
         if ($cursor[0] != $next_in_line) {
-          $line_nr = process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $next_in_line), $line_nr);
+          $line_nr = $this->process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $next_in_line), $line_nr);
           array_unshift($cursor, $next_in_line);
         }
       }
@@ -123,7 +123,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
       $this->close_soap($soapClient, $soapSessionId);
     } else {
-      $line_nr = process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr);
+      $line_nr = $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr);
     }
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
