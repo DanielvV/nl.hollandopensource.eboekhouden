@@ -262,7 +262,7 @@ CRM_Core_Error::debug_var("payment_lines",$payment_lines);
   protected function close_soap($soapClient, $sessionId) {
       // close session
       $soapParams = array(
-        "SessionID" => $sessionID
+        "SessionID" => $sessionId
       );
       $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
   }
