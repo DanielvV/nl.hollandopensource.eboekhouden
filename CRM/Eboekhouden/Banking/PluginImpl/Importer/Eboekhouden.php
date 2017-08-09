@@ -54,47 +54,47 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
    * will be used to avoid multiple account lookups
    */
   protected $account_cache = array();
-  /** 
+  /**
    * the plugin's user readable name
-   * 
+   *
    * @return string
    */
   static function displayName()
   {
     return 'E-boekhouden Importer';
   }
-  /** 
+  /**
    * Report if the plugin is capable of importing files
-   * 
+   *
    * @return bool
    */
   static function does_import_files()
   {
     return false;
   }
-  /** 
+  /**
    * Report if the plugin is capable of importing streams, i.e. data from a non-file source, e.g. the web
-   * 
+   *
    * @return bool
    */
   static function does_import_stream()
   {
     return true;
   }
-  /** 
+  /**
    * Test if the configured source is available and ready
-   * 
-   * @var 
+   *
+   * @var
    * @return TODO: data format?
    */
   function probe_stream( $params )
   {
     return true;
   }
-  /** 
+  /**
    * Import the given file
-   * 
-   * @return TODO: data format? 
+   *
+   * @return TODO: data format?
    */
   function import_stream( $params )
   {
@@ -109,21 +109,19 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $soapSessionId = $this->open_soap_session($soapClient);
 
       // loop through mutations
-      $line_nr = $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr);
-
-      $cursor = $config->cursor;
-      $newcursor = array_slice($cursor, -1);
-      while ($next_in_line = array_shift($cursor) + 1) {
-        if ($cursor[0] != $next_in_line) {
-          $line_nr = $this->process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $next_in_line), $line_nr);
-          array_unshift($cursor, $next_in_line);
+      $line_nr = $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr, $params);
+      $min = $config->cursor[0];
+      $max = max($config->cursor);
+      for ($i = $min; $i < $max; $i++) {
+        if (!in_array($i, $config->cursor)) {
+          $line_nr = $this->process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $i), $line_nr, $params);
         }
       }
-      $cursor = $newcursor;
+      $this->cursor = array($max);
 
       $this->close_soap($soapClient, $soapSessionId);
     } else {
-      $line_nr = $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr);
+      $line_nr = $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr, $params);
     }
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
@@ -140,7 +138,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
     $this->reportDone();
   }
-  protected function process_payment_lines($payment_lines, $line_nr) {
+  protected function process_payment_lines($payment_lines, $line_nr, $params) {
+CRM_Core_Error::debug_var("payment_lines",$payment_lines);
+    $config = $this->_plugin_config;
     foreach ($payment_lines as $payment_line) {
       $payment_line = get_object_vars($payment_line);
       // update stats
@@ -176,7 +176,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       if ($line_nr == $config->header) {
         // parse header
         if (sizeof($header)==0) {
-          $header = $line;  
+          $header = $line;
         }
       } else {
         $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
@@ -195,7 +195,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   }
   protected function open_soap_session($soapClient) {
     $config = $this->_plugin_config;
-    
+
     // open session and get sessionid
     $soapParams = array(
       "Username" => $config->username,
@@ -214,7 +214,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       "cFilter" => array(
         "MutatieNr" => 0,
         "Factuurnummer" => "",
-        "DatumVan" => date("Y-m-d", strtotime("-7 day")),
+        "DatumVan" => date("Y-m-d", strtotime("-4 day")),
         "DatumTm" => date("Y-m-d")
       )
     );
@@ -230,15 +230,16 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   }
   protected function get_soap_single($soapClient, $sessionId, $mutatieNr) {
     $config = $this->_plugin_config;
-    // request the last 500 mutations from the last week
+    // request the a single mutation
     $soapParams = array(
       "SecurityCode2" => $config->seccode2,
-      "SessionID" => $mutatieNr,
+      "SessionID" => $sessionId,
       "cFilter" => array(
-        "MutatieNr" => 0,
+        "MutatieNr" => $mutatieNr,
         "Factuurnummer" => "",
         "DatumVan" => date("Y-m-d", strtotime("-1 year")),
         "DatumTm" => date("Y-m-d")
+
       )
     );
     $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
@@ -261,7 +262,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   protected function import_payment($line, $line_nr, $params) {
     $config = $this->_plugin_config;
     $progress = $line_nr/$config->progressfactor;
-    
+
     // generate entry data
     $raw_data = serialize($line);
     $btx = array(
@@ -272,7 +273,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       'data_raw' => $raw_data,
       'sequence' => $line_nr-$config->header,
     );
-    
+
     // set default values from config:
     foreach ($config->defaults as $key => $value) {
       $btx[$key] = $value;
@@ -315,9 +316,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         }
         if ($this->account_cache[$value] != NULL) {
           if (substr($key, 0, 7)=="_party_") {
-            $btx['party_ba_id'] = $this->account_cache[$value];  
+            $btx['party_ba_id'] = $this->account_cache[$value];
           } elseif (substr($key, 0, 1)=="_") {
-            $btx['ba_id'] = $this->account_cache[$value];  
+            $btx['ba_id'] = $this->account_cache[$value];
           }
         }
       }
@@ -329,7 +330,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     } else {
       // otherwise use the template
       $bank_reference = $config->bank_reference;
-      $tokens = array(); 
+      $tokens = array();
       preg_match('/\{([^\}]+)\}/', $bank_reference, $tokens);
       foreach ($tokens as $key => $token_name) {
         if (!$key) continue;  // match#0 is not relevant
@@ -337,7 +338,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         $bank_reference = str_replace("{{$token_name}}", $token_value, $bank_reference);
       }
       $btx['bank_reference'] = $bank_reference;
-    }    
+    }
     // prepare $btx: put all entries, that are not for the basic object, into parsed data
     $btx_parsed_data = array();
     foreach ($btx as $key => $value) {
@@ -392,8 +393,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         print_r("CONDITION (IF) TYPE NOT YET IMPLEMENTED");
         return;
       }
-    }
-    // execute the rule
+    }    // execute the rule
     if ($this->startsWith($rule->type, 'object')) {
       foreach ($rule->to as $childrule) {
         try {
@@ -417,7 +417,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         $btx[$rule->to] = $btx[$rule->to]." ".$value;
       }
     } elseif ($this->startsWith($rule->type, 'trim')) {
-      // TRIM will strip the string of 
+      // TRIM will strip the string of
       $params = explode(":", $rule->type);
       if (isset($params[1])) {
         // the user provided a the trim parameters
@@ -443,7 +443,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         // the user provided a date format
         $datetime = DateTime::createFromFormat($params[1], $value);
         if ($datetime) {
-          $btx[$rule->to] = $datetime->format('YmdHis');  
+          $btx[$rule->to] = $datetime->format('YmdHis');
         }
       } else {
         $btx[$rule->to] = date('YmdHis', strtotime($value));
@@ -465,28 +465,28 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       } else {
         // check, if we should warn: (not set = 'warn' for backward compatibility)
         if (!isset($rule->warn) || $rule->warn) {
-          $this->reportProgress(CRM_Banking_PluginModel_Base::REPORT_PROGRESS_NONE, 
-            sprintf(ts("Pattern '%s' was not found in entry '%s'."), $pattern, $value));          
+          $this->reportProgress(CRM_Banking_PluginModel_Base::REPORT_PROGRESS_NONE,
+            sprintf(ts("Pattern '%s' was not found in entry '%s'."), $pattern, $value));
         }
       }
     } else {
       print_r("RULE TYPE NOT YET IMPLEMENTED");
-    }    
+    }
   }
-  /** 
+  /**
    * Test if the given file can be imported
-   * 
-   * @var 
-   * @return TODO: data format? 
+   *
+   * @var
+   * @return TODO: data format?
    */
   function probe_file( $file_path, $params )
   {
     return false;
   }
-  /** 
+  /**
    * Import the given file
-   * 
-   * @return TODO: data format? 
+   *
+   * @return TODO: data format?
    */
   function import_file( $file_path, $params )
   {
