@@ -150,7 +150,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       }
     }
     if ($config->debug_object=='') {
-      $this->close_soap;
+      $this->close_soap();
     }
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
