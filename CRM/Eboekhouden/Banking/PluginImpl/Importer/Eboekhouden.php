@@ -179,7 +179,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
           $header = $line;  
         }
       } else {
-        $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line)
+        $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
         if ($mutatieNr > $config->cursor[0]) {
           // import payment
           $this->import_payment($payment_line, $line_nr, $params);
