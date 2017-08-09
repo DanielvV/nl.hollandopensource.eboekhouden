@@ -1,6 +1,21 @@
 <?php
 
 return array(
+  'eboekhouden_cursor' => array(
+    'group_name' => 'SOAP api settings',
+    'group' => 'eboekhouden',
+    'name' => 'eboekhouden_cursor',
+    'type' => 'String',
+    'quick_form_type' => 'Element',
+    'html_type' => 'Text',
+    'default' => '',
+    'add' => '4.3',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'title' => 'SOAP mutations cursor',
+    'description' => 'Mutations cursor for SOAP api connection',
+    'help_text' => '',
+  ),
   'eboekhouden_soap_url' => array(
     'group_name' => 'SOAP api settings',
     'group' => 'eboekhouden',

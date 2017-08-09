@@ -35,8 +35,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
-    if (!isset($config->cursor))         $config->cursor = array(2480);
     if (!isset($config->debug_object))   $config->debug_object = '';
+    if (!isset($config->cursor))         $config->cursor = array(
+                                                             civicrm_api3('Setting', 'getvalue', array(
+                                                               'name' => "eboekhouden_cursor",
+                                                             ))
+                                                           );
     if (!isset($config->soap_url))       $config->soap_url = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_soap_url",
                                                              ));
@@ -118,6 +122,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         }
       }
       $this->cursor = array($max);
+      civicrm_api3('Setting', 'create', array(
+        'eboekhouden_cursor' => $max,
+      ));
 
       $this->close_soap($soapClient, $soapSessionId);
     } else {
@@ -214,7 +221,7 @@ CRM_Core_Error::debug_var("payment_lines",$payment_lines);
       "cFilter" => array(
         "MutatieNr" => 0,
         "Factuurnummer" => "",
-        "DatumVan" => date("Y-m-d", strtotime("-4 day")),
+        "DatumVan" => date("Y-m-d", strtotime("-7 day")),
         "DatumTm" => date("Y-m-d")
       )
     );
