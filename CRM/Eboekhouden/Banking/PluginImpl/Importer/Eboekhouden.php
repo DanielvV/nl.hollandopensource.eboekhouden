@@ -35,6 +35,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->progressfactor)) $config->progressfactor = 500;
+    if (!isset($config->cursor))         $config->cursor = array(2480);
     if (!isset($config->debug_object))   $config->debug_object = '';
     if (!isset($config->soap_url))       $config->soap_url = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_soap_url",
@@ -100,15 +101,48 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // begin
     $config = $this->_plugin_config;
     $line_nr = 1; // we want to skip the header (no header / not implemented)
-    if ($config->debug_object=='') {
-      $payment_lines = $this->get_soap();
-    } else {
-      $payment_lines = unserialize(gzuncompress(base64_decode($config->debug_object)));
-    }
-    
     $batch = $this->openTransactionBatch();
-    // loop through mutations
+
+    if ($config->debug_object=='') {
+      $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
+      $soapClient = $this->open_soap();
+      $soapSessionId = $this->open_soap_session($soapClient);
+
+      // loop through mutations
+      $line_nr = process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr);
+
+      $cursor = $config->cursor;
+      $newcursor = array_slice($cursor, -1);
+      while ($next_in_line = array_shift($cursor) + 1) {
+        if ($cursor[0] != $next_in_line) {
+          $line_nr = process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $next_in_line), $line_nr);
+          array_unshift($cursor, $next_in_line);
+        }
+      }
+      $cursor = $newcursor;
+
+      $this->close_soap($soapClient, $soapSessionId);
+    } else {
+      $line_nr = process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr);
+    }
+    //TODO: customize batch params
+    if ($this->getCurrentTransactionBatch()->tx_count) {
+      // we have transactions in the batch -> save
+      if ($config->title) {
+        // the config defines a title, replace tokens
+        $this->getCurrentTransactionBatch()->reference = $config->title;
+      } else {
+        $this->getCurrentTransactionBatch()->reference = "SOAP-import {md5}";
+      }
+      $this->closeTransactionBatch(TRUE);
+    } else {
+      $this->closeTransactionBatch(FALSE);
+    }
+    $this->reportDone();
+  }
+  protected function process_payment_lines($payment_lines, $line_nr) {
     foreach ($payment_lines as $payment_line) {
+      $payment_line = get_object_vars($payment_line);
       // update stats
       $line_nr += 1;
       // check if we want to skip line (by filter)
@@ -145,33 +179,23 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
           $header = $line;  
         }
       } else {
-        // import payment
-        $this->import_payment($payment_line, $line_nr, $params);
+        $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line)
+        if ($mutatieNr > $config->cursor[0]) {
+          // import payment
+          $this->import_payment($payment_line, $line_nr, $params);
+          array_push($config->cursor, $mutatieNr);
+        }
       }
     }
-    if ($config->debug_object=='') {
-      $this->close_soap();
-    }
-    //TODO: customize batch params
-    if ($this->getCurrentTransactionBatch()->tx_count) {
-      // we have transactions in the batch -> save
-      if ($config->title) {
-        // the config defines a title, replace tokens
-        $this->getCurrentTransactionBatch()->reference = $config->title;
-      } else {
-        $this->getCurrentTransactionBatch()->reference = "SOAP-import {md5}";
-      }
-      $this->closeTransactionBatch(TRUE);
-    } else {
-      $this->closeTransactionBatch(FALSE);
-    }
-    $this->reportDone();
+    return $line_nr;
   }
-  protected function get_soap() {
+  protected function open_soap() {
     $config = $this->_plugin_config;
-    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
-    $soapClient = new SoapClient($config->soap_url);
-
+    return new SoapClient($config->soap_url);
+  }
+  protected function open_soap_session($soapClient) {
+    $config = $this->_plugin_config;
+    
     // open session and get sessionid
     $soapParams = array(
       "Username" => $config->username,
@@ -179,11 +203,37 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       "SecurityCode2" => $config->seccode2
     );
     $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
-    $SessionID = $soapResponse->OpenSessionResult->SessionID;
-    // request the last 500 mutations
+    return $soapResponse->OpenSessionResult->SessionID;
+  }
+  protected function get_soap($soapClient, $sessionId) {
+    $config = $this->_plugin_config;
+    // request the last 500 mutations from the last week
     $soapParams = array(
       "SecurityCode2" => $config->seccode2,
-      "SessionID" => $SessionID,
+      "SessionID" => $sessionId,
+      "cFilter" => array(
+        "MutatieNr" => 0,
+        "Factuurnummer" => "",
+        "DatumVan" => date("Y-m-d", strtotime("-7 day")),
+        "DatumTm" => date("Y-m-d")
+      )
+    );
+    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
+    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
+    // make array if there is a result
+    if(!is_array($Mutations->cMutatieList))
+    {
+      return array($Mutations->cMutatieList);
+    } else {
+      return $Mutations->cMutatieList;
+    }
+  }
+  protected function get_soap_single($soapClient, $sessionId, $mutatieNr) {
+    $config = $this->_plugin_config;
+    // request the last 500 mutations from the last week
+    $soapParams = array(
+      "SecurityCode2" => $config->seccode2,
+      "SessionID" => $mutatieNr,
       "cFilter" => array(
         "MutatieNr" => 0,
         "Factuurnummer" => "",
@@ -201,7 +251,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       return $Mutations->cMutatieList;
     }
   }
-  protected function close_soap() {
+  protected function close_soap($soapClient, $sessionId) {
       // close session
       $soapParams = array(
         "SessionID" => $SessionID
@@ -222,8 +272,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       'data_raw' => $raw_data,
       'sequence' => $line_nr-$config->header,
     );
-    
-    $line = get_object_vars($line);
     
     // set default values from config:
     foreach ($config->defaults as $key => $value) {
