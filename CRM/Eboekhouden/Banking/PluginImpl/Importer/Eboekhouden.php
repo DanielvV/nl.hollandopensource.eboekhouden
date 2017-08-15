@@ -146,7 +146,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $this->reportDone();
   }
   protected function process_payment_lines($payment_lines, $line_nr, $params) {
-CRM_Core_Error::debug_var("payment_lines",$payment_lines);
     $config = $this->_plugin_config;
     foreach ($payment_lines as $payment_line) {
       $payment_line = get_object_vars($payment_line);

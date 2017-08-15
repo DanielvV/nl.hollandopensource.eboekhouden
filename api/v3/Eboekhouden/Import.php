@@ -25,18 +25,22 @@ function civicrm_api3_eboekhouden_Import($params) {
     if ($plugin->id == $plugin_id) {
       $plugin_instance = $plugin->getInstance();
       $plugin_instance->import_stream($import_parameters);
+      $returnValues = $plugin_instance->getLog();
       break;
-    } 
+    }
   }
 
-  $result = civicrm_api3('BankingTransactionBatch', 'get', array(
-    'return' => ["id"],
-  ));
-  $result = civicrm_api3('BankingTransaction', 'analyselist', array(
-    's_list' => max($result["values"])["id"],
-  ));
-
-  $returnValues = $result;
+  if (count($returnValues) > 2) {
+    $result = civicrm_api3('BankingTransactionBatch', 'get', array(
+      'return' => ["id"],
+    ));
+    $result = civicrm_api3('BankingTransaction', 'analyselist', array(
+      's_list' => max($result["values"])["id"],
+    ));
+    $returnValues[] = $result;
+  } else {
+    $returnValues = "Nothing to import.";
+  }
 
   // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
   return civicrm_api3_create_success($returnValues, $params, 'Eboekhouden', 'Import');
