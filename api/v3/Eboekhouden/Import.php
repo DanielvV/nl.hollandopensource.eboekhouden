@@ -36,8 +36,8 @@ function civicrm_api3_eboekhouden_Import($params) {
     's_list' => end($result["values"])["id"],
   ));
 
-  $returnValues = array();
+  $returnValues = $result;
 
   // Spec: civicrm_api3_create_success($values = 1, $params = array(), $entity = NULL, $action = NULL)
-  return civicrm_api3_create_success($returnValues, $params, 'NewEntity', 'NewAction');
+  return civicrm_api3_create_success($returnValues, $params, 'Eboekhouden', 'Import');
 }
