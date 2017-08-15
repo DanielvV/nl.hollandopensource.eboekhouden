@@ -299,7 +299,6 @@ function _eboekhouden_civix_insert_navigation_menu(&$menu, $path, $item) {
         if (!isset($entry['child'])) {
           $entry['child'] = array();
         }
-        CRM_Core_Error::debug_var('entry[child]', $entry['child']);
         $found = _eboekhouden_civix_insert_navigation_menu($entry['child'], implode('/', $path), $item, $key);
       }
     }

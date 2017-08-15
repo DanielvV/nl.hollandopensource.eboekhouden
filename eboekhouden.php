@@ -133,19 +133,33 @@ function eboekhouden_civicrm_preProcess($formName, &$form) {
 
 } // */
 
+function _getMenuKeyMax($menuArray) {
+  $max = array(max(array_keys($menuArray)));
+  foreach($menuArray as $v) {
+    if (!empty($v['child'])) {
+      $max[] = _getMenuKeyMax($v['child']);
+    }
+  }
+  return max($max);
+}
+
 /**
  * Implements hook_civicrm_navigationMenu().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
  */
 function eboekhouden_civicrm_navigationMenu(&$menu) {
+  $navId = _getMenuKeyMax($menu);
+  
   _eboekhouden_civix_insert_navigation_menu($menu, 'CiviBanking', array(
     'label' => ts('E-boekhouden Settings', array('domain' => 'nl.hollandopensource.eboekhouden')),
     'name' => 'E-boekhouden',
     'url' => 'civicrm/e-boekhouden',
-    'permission' => 'access CiviContribute,administer CiviCRM',
-    'operator' => 'OR',
+    'permission' => 'access CiviContribute',
+    'operator' => '',
     'separator' => 2,
+    'navID' => $navId,
   ));
   _eboekhouden_civix_navigationMenu($menu);
 }
+
