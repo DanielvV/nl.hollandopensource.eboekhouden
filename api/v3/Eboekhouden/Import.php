@@ -33,7 +33,7 @@ function civicrm_api3_eboekhouden_Import($params) {
     'return' => ["id"],
   ));
   $result = civicrm_api3('BankingTransaction', 'analyselist', array(
-    's_list' => end($result["values"])["id"],
+    's_list' => max($result["values"])["id"],
   ));
 
   $returnValues = $result;
