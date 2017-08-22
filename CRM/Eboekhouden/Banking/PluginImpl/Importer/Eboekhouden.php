@@ -29,9 +29,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $config = $this->_plugin_config;
     if (!isset($config->delimiter))      $config->delimiter = ',';
     if (!isset($config->title))          $config->title = '';
-    if (!isset($config->header))         $config->header = 1;
     if (!isset($config->warnings))       $config->warnings = true;
-    if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->debug_object))   $config->debug_object = '';
@@ -103,7 +101,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     // begin
     $config = $this->_plugin_config;
-    $line_nr = 1; // we want to skip the header (no header / not implemented)
+    $line_nr = 0;
     $batch = $this->openTransactionBatch();
 
     if ($config->debug_object=='') {
@@ -158,7 +156,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
           $payment_arraylines[] = unserialize(serialize($payment_line));
           $count += 1;
         }
-        $line_nr -= $count + 2;
         $config->progressfactor += $count - 1;
         $this->process_payment_lines($payment_arraylines, $line_nr, $params);
         break 1;
@@ -166,46 +163,11 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $payment_line = get_object_vars($payment_line);
       // update stats
       $line_nr += 1;
-      // check if we want to skip line (by filter)
-      if (!empty($config->line_filter)) {
-        $full_line = serialize($payment_line);
-        if (!preg_match($config->line_filter, $full_line)) {
-          $config->header += 1;  // bump line numbers if filtered out
-          continue;
-        }
-      }
-      // check encoding if necessary
-      //TODO: needs to be rewritten to facilitate object
-      if (isset($config->encoding)) {
-        $decoded_line = array();
-        foreach ($payment_line as $item) {
-          array_push($decoded_line, mb_convert_encoding($item, mb_internal_encoding(), $config->encoding));
-        }
-        $line = $decoded_line;
-      }
-      // exclude ignored columns from further processing
-      //TODO: needs to be rewritten to facilitate object
-      if (!empty($config->drop_columns)) {
-        foreach ($config->drop_columns as $column) {
-          $index = array_search($column, $header);
-          if ($index !== FALSE) {
-            unset($line[$index]);
-          }
-        }
-      }
-      //TODO: needs to be rewritten to facilitate object
-      if ($line_nr == $config->header) {
-        // parse header
-        if (sizeof($header)==0) {
-          $header = $line;
-        }
-      } else {
-        $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
-        if ($mutatieNr > $config->cursor[0]) {
-          // import payment
-          $this->import_payment($payment_line, $line_nr, $params);
-          array_push($config->cursor, $mutatieNr);
-        }
+      $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
+      if ($mutatieNr > $config->cursor[0]) {
+        // import payment
+        $this->import_payment($payment_line, $line_nr, $params);
+        array_push($config->cursor, $mutatieNr);
       }
     }
   }
@@ -291,7 +253,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       'type_id' => 0,                               // TODO: lookup type ?
       'status_id' => 0,                             // TODO: lookup status new
       'data_raw' => $raw_data,
-      'sequence' => $line_nr-$config->header,
+      'sequence' => $line_nr,
     );
 
     // set default values from config:
@@ -312,10 +274,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       foreach ($config->filter as $filter) {
         if ($filter->type=='string_positive') {
           // only accept string matches
-          $value1 = $this->getValue($filter->value1, $btx, $line, $header);
-          $value2 = $this->getValue($filter->value2, $btx, $line, $header);
+          $value1 = $this->getValue($filter->value1, $btx, $line);
+          $value2 = $this->getValue($filter->value2, $btx, $line);
           if ($value1 != $value2) {
-            $this->reportProgress($progress, sprintf("Skipped line %d", $line_nr-$config->header));
+            $this->reportProgress($progress, sprintf("Skipped line %d", $line_nr));
             return;
           }
         }
@@ -372,12 +334,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // and finally write it into the DB
     $duplicate = $this->checkAndStoreBTX($btx, $progress, $params);
     // TODO: process duplicates or failures?
-    $this->reportProgress($progress, sprintf("Imported line %d", $line_nr-$config->header));
+    $this->reportProgress($progress, sprintf("Imported line %d", $line_nr));
   }
   /**
    * Extract the value for the given key from the resources (line, btx).
    */
-  protected function getValue($key, $btx, $line=NULL, $header=array()) {
+  protected function getValue($key, $btx, $line=NULL) {
     // get value
     if ($this->startsWith($key, '_constant:')) {
       return substr($key, 10);
