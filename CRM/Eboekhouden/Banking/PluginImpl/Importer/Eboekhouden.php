@@ -161,11 +161,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         break 1;
       }
       $payment_line = get_object_vars($payment_line);
-      // update stats
-      $line_nr += 1;
       $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
+
+      // import payment
       if ($mutatieNr > $config->cursor[0]) {
-        // import payment
         $this->import_payment($payment_line, $line_nr, $params);
         array_push($config->cursor, $mutatieNr);
       }
@@ -241,9 +240,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       );
       $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
   }
-  protected function import_payment($line, $line_nr, $params) {
+  protected function import_payment($line, &$line_nr, $params) {
     $config = $this->_plugin_config;
-    $progress = ( $line_nr - 1 ) / $config->progressfactor;
+
+    // update stats
+    $line_nr += 1;
+    $progress = $line_nr / $config->progressfactor;
 
     // generate entry data
     $raw_data = serialize($line);
