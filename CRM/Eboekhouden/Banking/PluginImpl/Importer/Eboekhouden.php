@@ -147,7 +147,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   protected function process_payment_lines($payment_lines, &$line_nr, $params) {
     $config = $this->_plugin_config;
     if (!isset($config->progressfactor)) {
-      $config->progressfactor = $config->cursor[0] + 1 - $this->getValue('MutatieNr', array(), get_object_vars(end($payment_lines)));
+      $config->progressfactor = $this->getValue('MutatieNr', array(), get_object_vars(max($payment_lines))) - $config->cursor[0];
     }
     foreach ($payment_lines as $payment_line) {
       if (is_array($payment_line->MutatieRegels->cMutatieListRegel)) {
