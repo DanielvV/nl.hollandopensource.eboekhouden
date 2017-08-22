@@ -159,7 +159,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
           $count += 1;
         }
         $line_nr -= $count + 2;
-        $config->progressfactor += $count;
+        $config->progressfactor += $count - 1;
         $this->process_payment_lines($payment_arraylines, $line_nr, $params);
         break 1;
       }
@@ -281,7 +281,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   }
   protected function import_payment($line, $line_nr, $params) {
     $config = $this->_plugin_config;
-    $progress = $line_nr / $config->progressfactor;
+    $progress = ( $line_nr - 1 ) / $config->progressfactor;
 
     // generate entry data
     $raw_data = serialize($line);
