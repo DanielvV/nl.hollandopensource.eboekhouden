@@ -34,7 +34,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->line_filter))    $config->line_filter = NULL;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
-    if (!isset($config->progressfactor)) $config->progressfactor = 500;
     if (!isset($config->debug_object))   $config->debug_object = '';
     if (!isset($config->cursor))         $config->cursor = array(
                                                              civicrm_api3('Setting', 'getvalue', array(
@@ -113,12 +112,12 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $soapSessionId = $this->open_soap_session($soapClient);
 
       // loop through mutations
-      $line_nr = $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr, $params);
+      $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr, $params);
       $min = $config->cursor[0];
       $max = max($config->cursor);
       for ($i = $min; $i < $max; $i++) {
         if (!in_array($i, $config->cursor)) {
-          $line_nr = $this->process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $i), $line_nr, $params);
+          $this->process_payment_lines($this->get_soap_single($soapClient, $soapSessionId, $i), $line_nr, $params);
         }
       }
       $this->cursor = array($max);
@@ -128,7 +127,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
       $this->close_soap($soapClient, $soapSessionId);
     } else {
-      $line_nr = $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr, $params);
+      $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr, $params);
     }
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
@@ -145,9 +144,25 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
     $this->reportDone();
   }
-  protected function process_payment_lines($payment_lines, $line_nr, $params) {
+  protected function process_payment_lines($payment_lines, &$line_nr, $params) {
     $config = $this->_plugin_config;
+    if (!isset($config->progressfactor)) {
+      $config->progressfactor = $config->cursor[0] + 1 - $this->getValue('MutatieNr', array(), get_object_vars(end($payment_lines)));
+    }
     foreach ($payment_lines as $payment_line) {
+      if (is_array($payment_line->MutatieRegels->cMutatieListRegel)) {
+        $count = 0;
+        $payment_array = $payment_line->MutatieRegels->cMutatieListRegel;
+        foreach($payment_array as $arrayline) {
+          $payment_line->MutatieRegels->cMutatieListRegel = $arrayline;
+          $payment_arraylines[] = unserialize(serialize($payment_line));
+          $count += 1;
+        }
+        $line_nr -= $count + 2;
+        $config->progressfactor += $count;
+        $this->process_payment_lines($payment_arraylines, $line_nr, $params);
+        break 1;
+      }
       $payment_line = get_object_vars($payment_line);
       // update stats
       $line_nr += 1;
@@ -193,7 +208,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         }
       }
     }
-    return $line_nr;
   }
   protected function open_soap() {
     $config = $this->_plugin_config;
@@ -267,7 +281,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   }
   protected function import_payment($line, $line_nr, $params) {
     $config = $this->_plugin_config;
-    $progress = $line_nr/$config->progressfactor;
+    $progress = $line_nr / $config->progressfactor;
 
     // generate entry data
     $raw_data = serialize($line);
