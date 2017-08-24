@@ -33,11 +33,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
     if (!isset($config->debug_object))   $config->debug_object = '';
-    if (!isset($config->cursor))         $config->cursor = array(
-                                                             civicrm_api3('Setting', 'getvalue', array(
-                                                               'name' => "eboekhouden_cursor",
-                                                             ))
-                                                           );
+    if (!isset($config->cursor))         $config->cursor = civicrm_api3('Setting', 'getvalue', array(
+                                                             'name' => "eboekhouden_cursor",
+                                                           ));
     if (!isset($config->soap_url))       $config->soap_url = civicrm_api3('Setting', 'getvalue', array(
                                                                'name' => "eboekhouden_soap_url",
                                                              ));
@@ -101,7 +99,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
   {
     // begin
     $config = $this->_plugin_config;
-    $line_nr = 0;
     $batch = $this->openTransactionBatch();
 
     if ($config->debug_object=='') {
@@ -109,16 +106,13 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       $soapClient = $this->open_soap();
       $soapSessionId = $this->open_soap_session($soapClient);
 
-      // get the mutations
-      $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr, $params);
-      $this->cursor = array(max($config->cursor));
-      civicrm_api3('Setting', 'create', array(
-        'eboekhouden_cursor' => $max,
-      ));
+      // get the mutations and process them
+      $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $params);
 
+      // wrap up
       $this->close_soap($soapClient, $soapSessionId);
     } else {
-      $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr, $params);
+      $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $params);
     }
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
@@ -135,11 +129,14 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     }
     $this->reportDone();
   }
-  protected function process_payment_lines($payment_lines, &$line_nr, $params) {
+  protected function process_payment_lines($payment_lines, $params) {
     $config = $this->_plugin_config;
-    if (!isset($config->progressfactor)) {
-      $config->progressfactor = $this->getValue('MutatieNr', array(), get_object_vars(max($payment_lines))) - $config->cursor[0];
-    }
+    $line_nr = 0;
+    $newcursor = $this->getValue('MutatieNr', array(), get_object_vars(max($payment_lines)));
+    $config->progressfactor = $newcursor - $config->cursor;
+    civicrm_api3('Setting', 'create', array(
+      'eboekhouden_cursor' => $newcursor,
+    ));
     foreach ($payment_lines as $payment_line) {
       if (is_array($payment_line->MutatieRegels->cMutatieListRegel)) {
         $count = 0;
@@ -154,11 +151,10 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         break 1;
       }
       $payment_line = get_object_vars($payment_line);
-      $mutatieNr = $this->getValue('MutatieNr', array(), $payment_line);
+      $mutatieNr = $this->getValue('MutatieNr', array(), get_object_vars($payment_line));
 
       // import payment
-      $this->import_payment($payment_line, $line_nr, $params);
-      array_push($config->cursor, $mutatieNr);
+      $this->import_payment(get_object_vars($payment_line), $line_nr, $params);
     }
   }
   protected function open_soap() {
@@ -185,8 +181,8 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       "SessionID" => $sessionId,
       "cFilter" => array(
         "MutatieNr" => 0,
-        "MutatieNrVan" => $config->cursor[0] + 1,
-        "MutatieNrTm" => $config->cursor[0] + 501,
+        "MutatieNrVan" => $config->cursor + 1,
+        "MutatieNrTm" => $config->cursor + 501,
         "Factuurnummer" => "",
         "DatumVan" => date("Y-m-d", strtotime("-1 year")),
         "DatumTm" => date("Y-m-d")
