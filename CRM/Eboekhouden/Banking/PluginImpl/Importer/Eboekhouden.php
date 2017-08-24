@@ -150,9 +150,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
         $this->process_payment_lines($payment_arraylines, $line_nr, $params);
         break 1;
       }
-      $payment_line = get_object_vars($payment_line);
-      $mutatieNr = $this->getValue('MutatieNr', array(), get_object_vars($payment_line));
-
       // import payment
       $this->import_payment(get_object_vars($payment_line), $line_nr, $params);
     }
