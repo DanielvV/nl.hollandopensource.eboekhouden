@@ -139,7 +139,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
 
     // close session
     $soapParams = array(
-      "SessionID" => $sessionId
+      "SessionID" => $soapSessionId
     );
     $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
 
