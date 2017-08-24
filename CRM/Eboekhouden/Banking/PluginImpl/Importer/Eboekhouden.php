@@ -27,12 +27,9 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     parent::__construct($config_name);
     // read config, set defaults
     $config = $this->_plugin_config;
-    if (!isset($config->delimiter))      $config->delimiter = ',';
-    if (!isset($config->title))          $config->title = '';
     if (!isset($config->warnings))       $config->warnings = true;
     if (!isset($config->defaults))       $config->defaults = array();
     if (!isset($config->rules))          $config->rules = array();
-    if (!isset($config->debug_object))   $config->debug_object = '';
     if (!isset($config->cursor))         $config->cursor = civicrm_api3('Setting', 'getvalue', array(
                                                              'name' => "eboekhouden_cursor",
                                                            ));
@@ -102,23 +99,54 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $line_nr = 0;
     $batch = $this->openTransactionBatch();
 
-    if ($config->debug_object=='') {
-      $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
-      $soapClient = $this->open_soap();
-      $soapSessionId = $this->open_soap_session($soapClient);
+    // get the mutations and process them
+    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
+    $soapClient = new SoapClient($config->soap_url);
 
-      // get the mutations and process them
-      $this->process_payment_lines($this->get_soap($soapClient, $soapSessionId), $line_nr, $params);
+    // open session and get sessionid
+    $soapParams = array(
+      "Username" => $config->username,
+      "SecurityCode1" => $config->seccode1,
+      "SecurityCode2" => $config->seccode2
+    );
+    $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
+    $soapSessionId = $soapResponse->OpenSessionResult->SessionID;
 
-      // wrap up
-      $this->close_soap($soapClient, $soapSessionId);
-    } else {
-      $this->process_payment_lines(unserialize(gzuncompress(base64_decode($config->debug_object))), $line_nr, $params);
+    // request the last 500 mutations from the last year
+    $soapParams = array(
+      "SecurityCode2" => $config->seccode2,
+      "SessionID" => $sessionId,
+      "cFilter" => array(
+        "MutatieNr" => 0,
+        "MutatieNrVan" => $config->cursor + 1,
+        "MutatieNrTm" => $config->cursor + 501,
+        "Factuurnummer" => "",
+        "DatumVan" => date("Y-m-d", strtotime("-1 year")),
+        "DatumTm" => date("Y-m-d")
+      )
+    );
+    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
+    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
+    if (isset($Mutations->cMutatieList)) {
+      // make array if there is a result
+      if (!is_array($Mutations->cMutatieList)) {
+        $payment_lines = array($Mutations->cMutatieList);
+      } else {
+        $payment_lines = $Mutations->cMutatieList;
+      }
+      $this->process_payment_lines($payment_lines, $line_nr, $params);
     }
+
+    // close session
+    $soapParams = array(
+      "SessionID" => $sessionId
+    );
+    $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
+
     //TODO: customize batch params
     if ($this->getCurrentTransactionBatch()->tx_count) {
       // we have transactions in the batch -> save
-      if ($config->title) {
+      if (isset($config->title)) {
         // the config defines a title, replace tokens
         $this->getCurrentTransactionBatch()->reference = $config->title;
       } else {
@@ -153,54 +181,6 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
       // import payment
       $this->import_payment(get_object_vars($payment_line), $line_nr, $params);
     }
-  }
-  protected function open_soap() {
-    $config = $this->_plugin_config;
-    return new SoapClient($config->soap_url);
-  }
-  protected function open_soap_session($soapClient) {
-    $config = $this->_plugin_config;
-
-    // open session and get sessionid
-    $soapParams = array(
-      "Username" => $config->username,
-      "SecurityCode1" => $config->seccode1,
-      "SecurityCode2" => $config->seccode2
-    );
-    $soapResponse = $soapClient->__soapCall("OpenSession", array($soapParams));
-    return $soapResponse->OpenSessionResult->SessionID;
-  }
-  protected function get_soap($soapClient, $sessionId) {
-    $config = $this->_plugin_config;
-    // request the last 500 mutations from the last year
-    $soapParams = array(
-      "SecurityCode2" => $config->seccode2,
-      "SessionID" => $sessionId,
-      "cFilter" => array(
-        "MutatieNr" => 0,
-        "MutatieNrVan" => $config->cursor + 1,
-        "MutatieNrTm" => $config->cursor + 501,
-        "Factuurnummer" => "",
-        "DatumVan" => date("Y-m-d", strtotime("-1 year")),
-        "DatumTm" => date("Y-m-d")
-      )
-    );
-    $soapResponse = $soapClient->__soapCall("GetMutaties", array($soapParams));
-    $Mutations = $soapResponse->GetMutatiesResult->Mutaties;
-    // make array if there is a result
-    if(!is_array($Mutations->cMutatieList))
-    {
-      return array($Mutations->cMutatieList);
-    } else {
-      return $Mutations->cMutatieList;
-    }
-  }
-  protected function close_soap($soapClient, $sessionId) {
-      // close session
-      $soapParams = array(
-        "SessionID" => $sessionId
-      );
-      $soapResponse = $soapClient->__soapCall("CloseSession", array($soapParams));
   }
   protected function import_payment($line, &$line_nr, $params) {
     $config = $this->_plugin_config;
@@ -283,7 +263,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     // and finally write it into the DB
     $duplicate = $this->checkAndStoreBTX($btx, $progress, $params);
     // TODO: process duplicates or failures?
-    $this->reportProgress($progress, sprintf("Imported line %d", $line_nr));
+    $this->reportProgress($progress, sprintf("Imported line %d<br>", $line_nr));
   }
   /**
    * Extract the value for the given key from the resources (line, btx).
