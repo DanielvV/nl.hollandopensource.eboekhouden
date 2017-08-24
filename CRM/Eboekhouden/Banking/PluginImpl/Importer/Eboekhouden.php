@@ -100,7 +100,7 @@ class CRM_Eboekhouden_Banking_PluginImpl_Importer_Eboekhouden extends CRM_Bankin
     $batch = $this->openTransactionBatch();
 
     // get the mutations and process them
-    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...", $config->username));
+    $this->reportProgress(0.0, sprintf("Creating SOAP connection with username '%s'...<br>", $config->username));
     $soapClient = new SoapClient($config->soap_url);
 
     // open session and get sessionid
