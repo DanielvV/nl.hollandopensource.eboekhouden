@@ -31,12 +31,7 @@ function civicrm_api3_eboekhouden_Import($params) {
   }
 
   if (count($returnValues) > 2) {
-    $result = civicrm_api3('BankingTransactionBatch', 'get', array(
-      'return' => ["id"],
-    ));
-    $result = civicrm_api3('BankingTransaction', 'analyselist', array(
-      's_list' => max($result["values"])["id"],
-    ));
+    $result = civicrm_api3('BankingTransaction', 'analyseoldest');
     $returnValues[] = $result;
   } else {
     $returnValues = "Nothing to import.";
