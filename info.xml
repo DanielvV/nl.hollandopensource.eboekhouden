@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <extension key="nl.hollandopensource.eboekhouden" type="module">
   <file>eboekhouden</file>
-  <name>CiviBanking e-Boekhouden.nl import</name>
-  <description>Import contributions directly from e-boekhouden.nl via SOAP connection</description>
+  <name>e-Boekhouden.nl import</name>
+  <description>Import contributions directly into CiviBanking from e-boekhouden.nl via SOAP connection</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Dani&#xEB;l van Vuuren</author>
